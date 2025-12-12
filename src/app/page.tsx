@@ -259,19 +259,16 @@ function LandingPage() {
               <div className="flex items-start gap-6 relative">
                 <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0 z-10">1</div>
                 <div className="pt-1">
-                  <h3 className="font-semibold mb-1">Claude CLI Kur</h3>
-                  <p className="text-muted-foreground text-sm mb-2">Terminal aç ve bu komutu çalıştır:</p>
-                  <code className="bg-background px-3 py-1.5 rounded text-xs block font-mono">
-                    npm install -g @anthropic-ai/claude-code
-                  </code>
+                  <h3 className="font-semibold mb-1">Prompt Oz'u İndir</h3>
+                  <p className="text-muted-foreground text-sm">Yukarıdaki butona tıkla, DMG dosyasını aç, uygulamayı Applications'a sürükle.</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-6 relative">
                 <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0 z-10">2</div>
                 <div className="pt-1">
-                  <h3 className="font-semibold mb-1">Prompt Oz'u İndir ve Kur</h3>
-                  <p className="text-muted-foreground text-sm">Yukarıdaki butona tıkla, DMG dosyasını aç, uygulamayı Applications'a sürükle.</p>
+                  <h3 className="font-semibold mb-1">AI Bağlantısını Ayarla</h3>
+                  <p className="text-muted-foreground text-sm">Claude CLI kur veya ayarlardan OpenAI, Anthropic, Gemini API key'ini gir.</p>
                 </div>
               </div>
 
@@ -294,10 +291,10 @@ function LandingPage() {
 
         <div className="max-w-2xl mx-auto grid sm:grid-cols-2 gap-4">
           {[
-            { text: 'API key gerekmez', desc: 'Claude CLI üzerinden çalışır' },
+            { text: 'Çoklu AI Desteği', desc: 'OpenAI, Anthropic, Gemini, Claude CLI' },
             { text: 'Tamamen ücretsiz', desc: 'Açık kaynak, ücret yok' },
-            { text: 'Çok hafif', desc: 'Sadece 7.4MB indirme' },
-            { text: 'Hızlı başlangıç', desc: 'Kurulum gerektirmez' },
+            { text: 'Güvenli', desc: 'API key saklanmaz, sadece oturumda' },
+            { text: 'Hızlı başlangıç', desc: 'İndir, aç, kullan' },
           ].map((benefit, i) => (
             <Card key={i} className="p-4 flex items-start gap-3">
               <Check className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
