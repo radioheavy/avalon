@@ -57,7 +57,7 @@ function Logo({ size = 48, className = '' }: { size?: number; className?: string
 
 // GitHub releases URL
 const GITHUB_RELEASES = 'https://github.com/radioheavy/prompto/releases/latest';
-const MAC_DOWNLOAD = 'https://github.com/radioheavy/prompto/releases/download/v0.1.0/Promptica-0.1.0-mac.dmg';
+const MAC_DOWNLOAD = 'https://github.com/radioheavy/prompto/releases/download/v0.1.0/Promptica_0.1.0_aarch64.dmg';
 const WINDOWS_DOWNLOAD = 'https://github.com/radioheavy/prompto/releases/latest'; // Windows build coming soon
 
 // Screenshot data
