@@ -31,6 +31,15 @@ import {
   Github,
   Terminal,
   Loader2,
+  MoreVertical,
+  Settings,
+  ChevronDown,
+  Code,
+  Wand2,
+  X,
+  Send,
+  Layers,
+  RotateCcw,
 } from 'lucide-react';
 
 // Logo component
@@ -1572,7 +1581,7 @@ function EditorApp() {
 }
 
 // ============================================
-// MOBILE APP
+// MOBILE APP - Full Featured
 // ============================================
 function MobileApp() {
   const [step, setStep] = useState<'onboarding' | 'provider' | 'apikey' | 'ready' | 'dashboard' | 'editor'>('onboarding');
@@ -1580,9 +1589,28 @@ function MobileApp() {
   const [apiKey, setApiKey] = useState('');
   const [isTestingKey, setIsTestingKey] = useState(false);
   const [keyError, setKeyError] = useState('');
-  const { prompts, createPrompt, setCurrentPrompt, currentPromptId, getCurrentPrompt, updatePrompt } = usePromptStore();
+  const {
+    prompts,
+    createPrompt,
+    setCurrentPrompt,
+    getCurrentPrompt,
+    updatePrompt,
+    deletePrompt,
+    selectedPath,
+    setSelectedPath,
+    expandAll,
+    collapseAll,
+    updateValue
+  } = usePromptStore();
   const [aiInput, setAiInput] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [editorTab, setEditorTab] = useState<'tree' | 'ai' | 'json'>('tree');
+  const [showMenu, setShowMenu] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState<string | null>(null);
+  const [newName, setNewName] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [copiedToast, setCopiedToast] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<{ value: string; explanation: string } | null>(null);
 
   // Check if already set up
   useEffect(() => {
@@ -1654,11 +1682,67 @@ function MobileApp() {
 
   const currentPrompt = getCurrentPrompt();
 
+  // Copy to clipboard with toast
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedToast(true);
+    setTimeout(() => setCopiedToast(false), 2000);
+  };
+
+  // Download JSON file
+  const downloadJson = () => {
+    if (!currentPrompt) return;
+    const blob = new Blob([JSON.stringify(currentPrompt.content, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentPrompt.name.replace(/\s+/g, '_')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Import JSON file
+  const importJson = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = JSON.parse(e.target?.result as string);
+        const newId = createPrompt(file.name.replace('.json', ''), content);
+        setCurrentPrompt(newId);
+        setStep('editor');
+      } catch (error) {
+        console.error('Invalid JSON:', error);
+        alert('Geçersiz JSON dosyası');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // Rename prompt
+  const handleRename = (id: string, name: string) => {
+    updatePrompt(id, { name });
+    setEditingName(null);
+    setNewName('');
+  };
+
+  // Delete prompt
+  const handleDelete = (id: string) => {
+    deletePrompt(id);
+    setShowDeleteConfirm(null);
+    if (currentPrompt?.id === id) {
+      setStep('dashboard');
+    }
+  };
+
   // AI ile düzenleme
   const handleAiEdit = async () => {
     if (!aiInput.trim() || !currentPrompt) return;
 
     setIsAiLoading(true);
+    setAiSuggestion(null);
+
     try {
       const response = await fetch('/api/ai/update', {
         method: 'POST',
@@ -1666,16 +1750,26 @@ function MobileApp() {
         body: JSON.stringify({
           provider,
           apiKey,
-          instruction: aiInput,
-          currentValue: JSON.stringify(currentPrompt.content, null, 2),
+          userRequest: aiInput,
+          currentPath: selectedPath,
+          currentValue: selectedPath ? JSON.stringify(currentPrompt.content) : null,
           fullPrompt: currentPrompt.content
         })
       });
 
       const data = await response.json();
-      if (data.success && data.updatedPrompt && currentPrompt) {
-        updatePrompt(currentPrompt.id, { content: data.updatedPrompt });
-        setAiInput('');
+      if (data.success) {
+        if (data.updatedValue !== undefined && selectedPath) {
+          setAiSuggestion({
+            value: typeof data.updatedValue === 'object'
+              ? JSON.stringify(data.updatedValue, null, 2)
+              : String(data.updatedValue),
+            explanation: data.explanation || 'AI önerisi hazır'
+          });
+        } else if (data.updatedPrompt) {
+          updatePrompt(currentPrompt.id, { content: data.updatedPrompt });
+          setAiInput('');
+        }
       }
     } catch (error) {
       console.error('AI error:', error);
@@ -1683,6 +1777,26 @@ function MobileApp() {
       setIsAiLoading(false);
     }
   };
+
+  // Apply AI suggestion
+  const applyAiSuggestion = () => {
+    if (!aiSuggestion || !selectedPath || !currentPrompt) return;
+    try {
+      const value = JSON.parse(aiSuggestion.value);
+      updateValue(selectedPath, value);
+    } catch {
+      updateValue(selectedPath, aiSuggestion.value);
+    }
+    setAiSuggestion(null);
+    setAiInput('');
+  };
+
+  // Quick AI actions
+  const quickActions = [
+    { label: 'Detaylı yap', action: 'Daha detaylı ve açıklayıcı yap' },
+    { label: 'Basitleştir', action: 'Daha basit ve kısa yap' },
+    { label: 'İngilizce', action: 'İngilizceye çevir' },
+  ];
 
   // Onboarding
   if (step === 'onboarding') {
@@ -1767,7 +1881,7 @@ function MobileApp() {
 
         <h1 className="text-xl font-bold mb-2">{providerNames[provider]} API Key</h1>
         <p className="text-muted-foreground text-sm mb-6">
-          API key'in güvenli şekilde sadece bu oturumda saklanır.
+          API key&apos;in güvenli şekilde sadece bu oturumda saklanır.
         </p>
 
         <Input
@@ -1816,12 +1930,38 @@ function MobileApp() {
     return (
       <div className="min-h-screen bg-neutral-50">
         {/* Header */}
-        <div className="bg-white border-b px-4 py-3 flex items-center justify-between">
+        <div className="bg-white border-b px-4 py-3 flex items-center justify-between sticky top-0 z-10">
           <div className="flex items-center gap-2">
             <Logo size={32} />
             <span className="font-semibold">Prompt Oz</span>
           </div>
-          <div className={`px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${providerColors[provider]} text-white`}>
+          <div className="flex items-center gap-2">
+            <label className="p-2 hover:bg-neutral-100 rounded-lg cursor-pointer">
+              <Upload className="h-5 w-5 text-neutral-500" />
+              <input
+                type="file"
+                accept=".json"
+                className="hidden"
+                onChange={(e) => e.target.files?.[0] && importJson(e.target.files[0])}
+              />
+            </label>
+            <button
+              onClick={() => {
+                localStorage.removeItem('prompto-mobile-complete');
+                sessionStorage.removeItem('prompto-api-key');
+                setStep('onboarding');
+              }}
+              className="p-2 hover:bg-neutral-100 rounded-lg"
+            >
+              <Settings className="h-5 w-5 text-neutral-500" />
+            </button>
+          </div>
+        </div>
+
+        {/* Provider Badge */}
+        <div className="px-4 pt-4">
+          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-gradient-to-r ${providerColors[provider]} text-white`}>
+            <Sparkles className="h-3 w-3" />
             {providerNames[provider]}
           </div>
         </div>
@@ -1837,28 +1977,144 @@ function MobileApp() {
             <div className="text-center py-12">
               <FileJson className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
               <p className="text-muted-foreground">Henüz prompt yok</p>
-              <p className="text-sm text-muted-foreground">Yeni bir tane oluştur!</p>
+              <p className="text-sm text-muted-foreground">Yeni bir tane oluştur veya import et!</p>
             </div>
           ) : (
             <div className="space-y-2">
               {prompts.map((prompt) => (
-                <button
-                  key={prompt.id}
-                  onClick={() => {
-                    setCurrentPrompt(prompt.id);
-                    setStep('editor');
-                  }}
-                  className="w-full p-4 bg-white rounded-xl border text-left"
-                >
-                  <p className="font-medium">{prompt.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(prompt.updatedAt).toLocaleDateString('tr-TR')}
-                  </p>
-                </button>
+                <div key={prompt.id} className="relative">
+                  {editingName === prompt.id ? (
+                    <div className="p-3 bg-white rounded-xl border-2 border-violet-500">
+                      <Input
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleRename(prompt.id, newName);
+                          if (e.key === 'Escape') setEditingName(null);
+                        }}
+                        autoFocus
+                        className="mb-2"
+                      />
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => handleRename(prompt.id, newName)} className="flex-1">
+                          Kaydet
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => setEditingName(null)}>
+                          İptal
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center bg-white rounded-xl border">
+                      <button
+                        onClick={() => {
+                          setCurrentPrompt(prompt.id);
+                          setStep('editor');
+                        }}
+                        className="flex-1 p-4 text-left"
+                      >
+                        <p className="font-medium">{prompt.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(prompt.updatedAt).toLocaleDateString('tr-TR')}
+                        </p>
+                      </button>
+                      <div className="relative pr-2">
+                        <button
+                          onClick={() => setShowMenu(showMenu === prompt.id ? null : prompt.id)}
+                          className="p-2 hover:bg-neutral-100 rounded-lg"
+                        >
+                          <MoreVertical className="h-5 w-5 text-neutral-400" />
+                        </button>
+                        {showMenu === prompt.id && (
+                          <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border py-1 z-20 min-w-[140px]">
+                            <button
+                              onClick={() => {
+                                setNewName(prompt.name);
+                                setEditingName(prompt.id);
+                                setShowMenu(null);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 flex items-center gap-2"
+                            >
+                              <Edit className="h-4 w-4" />
+                              Yeniden Adlandır
+                            </button>
+                            <button
+                              onClick={() => {
+                                const blob = new Blob([JSON.stringify(prompt.content, null, 2)], { type: 'application/json' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `${prompt.name.replace(/\s+/g, '_')}.json`;
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                                setShowMenu(null);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 flex items-center gap-2"
+                            >
+                              <Download className="h-4 w-4" />
+                              İndir
+                            </button>
+                            <button
+                              onClick={() => {
+                                setShowDeleteConfirm(prompt.id);
+                                setShowMenu(null);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 text-red-600 flex items-center gap-2"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Sil
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           )}
         </div>
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-center mb-2">Silmek istediğine emin misin?</h3>
+              <p className="text-sm text-muted-foreground text-center mb-4">
+                Bu işlem geri alınamaz.
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDeleteConfirm(null)}
+                  className="flex-1"
+                >
+                  İptal
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => handleDelete(showDeleteConfirm)}
+                  className="flex-1"
+                >
+                  Sil
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Click outside to close menu */}
+        {showMenu && (
+          <div
+            className="fixed inset-0 z-10"
+            onClick={() => setShowMenu(null)}
+          />
+        )}
       </div>
     );
   }
@@ -1868,50 +2124,192 @@ function MobileApp() {
     return (
       <div className="min-h-screen bg-neutral-50 flex flex-col">
         {/* Header */}
-        <div className="bg-white border-b px-4 py-3 flex items-center gap-3">
-          <button onClick={() => setStep('dashboard')}>
+        <div className="bg-white border-b px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
+          <button onClick={() => {
+            setStep('dashboard');
+            setSelectedPath(null);
+          }}>
             <ChevronLeft className="h-6 w-6" />
           </button>
           <span className="font-medium flex-1 truncate">{currentPrompt.name}</span>
           <button
-            onClick={() => {
-              navigator.clipboard.writeText(JSON.stringify(currentPrompt.content, null, 2));
-            }}
-            className="p-2"
+            onClick={() => copyToClipboard(JSON.stringify(currentPrompt.content, null, 2))}
+            className="p-2 hover:bg-neutral-100 rounded-lg"
           >
             <Copy className="h-5 w-5 text-muted-foreground" />
           </button>
+          <button
+            onClick={downloadJson}
+            className="p-2 hover:bg-neutral-100 rounded-lg"
+          >
+            <Download className="h-5 w-5 text-muted-foreground" />
+          </button>
         </div>
 
-        {/* JSON Preview */}
-        <div className="flex-1 p-4 overflow-auto">
-          <pre className="text-xs bg-white p-4 rounded-xl border overflow-x-auto">
-            {JSON.stringify(currentPrompt.content, null, 2)}
-          </pre>
-        </div>
-
-        {/* AI Input */}
-        <div className="bg-white border-t p-4">
-          <div className="flex gap-2">
-            <Input
-              placeholder="AI'ya ne yapmasını iste..."
-              value={aiInput}
-              onChange={(e) => setAiInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAiEdit()}
-              className="flex-1"
-            />
-            <Button onClick={handleAiEdit} disabled={isAiLoading} size="icon">
-              {isAiLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="h-4 w-4" />
-              )}
-            </Button>
+        {/* Tabs */}
+        <div className="bg-white border-b px-4">
+          <div className="flex gap-1">
+            {[
+              { id: 'tree', label: 'Ağaç', icon: Layers },
+              { id: 'ai', label: 'AI', icon: Sparkles },
+              { id: 'json', label: 'JSON', icon: Code },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setEditorTab(tab.id as 'tree' | 'ai' | 'json')}
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                  editorTab === tab.id
+                    ? 'border-violet-500 text-violet-600'
+                    : 'border-transparent text-neutral-500 hover:text-neutral-700'
+                }`}
+              >
+                <tab.icon className="h-4 w-4" />
+                {tab.label}
+              </button>
+            ))}
           </div>
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            Örn: "description'ı daha detaylı yap"
-          </p>
         </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {/* Tree Tab */}
+          {editorTab === 'tree' && (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Tree Toolbar */}
+              <div className="bg-white border-b px-4 py-2 flex items-center gap-2">
+                <button
+                  onClick={expandAll}
+                  className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500"
+                  title="Tümünü genişlet"
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={collapseAll}
+                  className="p-2 hover:bg-neutral-100 rounded-lg text-neutral-500"
+                  title="Tümünü daralt"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <div className="flex-1" />
+                {selectedPath && (
+                  <span className="text-xs text-violet-600 bg-violet-50 px-2 py-1 rounded-lg font-mono truncate max-w-[150px]">
+                    {selectedPath.join('.')}
+                  </span>
+                )}
+              </div>
+
+              {/* Tree Content */}
+              <div className="flex-1 overflow-auto">
+                <PromptTree />
+              </div>
+            </div>
+          )}
+
+          {/* AI Tab */}
+          {editorTab === 'ai' && (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex-1 overflow-auto p-4">
+                {/* Selected Path Info */}
+                {selectedPath ? (
+                  <div className="mb-4 p-3 bg-violet-50 rounded-xl">
+                    <p className="text-xs text-violet-600 font-medium mb-1">Seçili alan</p>
+                    <code className="text-sm font-mono text-violet-700">{selectedPath.join('.')}</code>
+                  </div>
+                ) : (
+                  <div className="mb-4 p-4 bg-amber-50 rounded-xl">
+                    <p className="text-sm text-amber-700">
+                      💡 Bir alanı düzenlemek için önce Ağaç sekmesinden seç
+                    </p>
+                  </div>
+                )}
+
+                {/* Quick Actions */}
+                {selectedPath && (
+                  <div className="mb-4">
+                    <p className="text-xs font-medium text-neutral-500 mb-2">Hızlı İşlemler</p>
+                    <div className="flex flex-wrap gap-2">
+                      {quickActions.map((action) => (
+                        <button
+                          key={action.label}
+                          onClick={() => setAiInput(action.action)}
+                          className="px-3 py-1.5 text-xs bg-neutral-100 hover:bg-neutral-200 rounded-lg font-medium transition-colors"
+                        >
+                          {action.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* AI Suggestion */}
+                {aiSuggestion && (
+                  <div className="mb-4 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Check className="h-4 w-4 text-emerald-600" />
+                      <span className="font-medium text-sm text-emerald-700">AI Önerisi</span>
+                    </div>
+                    <p className="text-sm text-neutral-600 mb-3">{aiSuggestion.explanation}</p>
+                    <pre className="text-xs bg-white p-3 rounded-lg mb-3 overflow-auto max-h-32 border">
+                      {aiSuggestion.value}
+                    </pre>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={applyAiSuggestion} className="flex-1">
+                        <Check className="h-4 w-4 mr-1" />
+                        Uygula
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setAiSuggestion(null)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* AI Input */}
+              <div className="bg-white border-t p-4">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder={selectedPath ? "Ne değiştirmek istiyorsun?" : "Önce bir alan seç..."}
+                    value={aiInput}
+                    onChange={(e) => setAiInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleAiEdit()}
+                    disabled={!selectedPath}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={handleAiEdit}
+                    disabled={isAiLoading || !selectedPath || !aiInput.trim()}
+                    size="icon"
+                  >
+                    {isAiLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* JSON Tab */}
+          {editorTab === 'json' && (
+            <div className="flex-1 overflow-auto p-4">
+              <pre className="text-xs bg-white p-4 rounded-xl border overflow-x-auto font-mono">
+                {JSON.stringify(currentPrompt.content, null, 2)}
+              </pre>
+            </div>
+          )}
+        </div>
+
+        {/* Toast */}
+        {copiedToast && (
+          <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-neutral-800 text-white px-4 py-2 rounded-full text-sm flex items-center gap-2 shadow-lg z-50">
+            <Check className="h-4 w-4" />
+            Kopyalandı!
+          </div>
+        )}
       </div>
     );
   }
