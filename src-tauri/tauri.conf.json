@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Prompto",
+  "productName": "Prompt Oz",
   "version": "0.1.0",
-  "identifier": "com.prompto.app",
+  "identifier": "com.promptoz.app",
   "build": {
     "frontendDist": "../out",
     "devUrl": "http://localhost:3000",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Prompto - AI Prompt Editor",
+        "title": "Prompt Oz - AI Prompt Editor",
         "width": 1400,
         "height": 900,
         "minWidth": 1000,

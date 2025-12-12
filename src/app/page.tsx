@@ -48,7 +48,7 @@ function Logo({ size = 48, className = '' }: { size?: number; className?: string
 
 // GitHub releases URL
 const GITHUB_RELEASES = 'https://github.com/radioheavy/prompto/releases/latest';
-const MAC_DOWNLOAD = 'https://github.com/radioheavy/prompto/releases/download/v0.1.0/Prompto_0.1.0_aarch64.dmg';
+const MAC_DOWNLOAD = 'https://github.com/radioheavy/prompto/releases/download/v0.1.0/Prompt%20Oz_0.1.0_aarch64.dmg';
 const WINDOWS_DOWNLOAD = 'https://github.com/radioheavy/prompto/releases/latest'; // Windows build coming soon
 
 type View = 'dashboard' | 'editor';
