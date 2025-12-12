@@ -40,6 +40,7 @@ import {
   Send,
   Layers,
   RotateCcw,
+  Shield,
 } from 'lucide-react';
 
 // Logo component
@@ -449,6 +450,11 @@ function LandingPage() {
           </div>
 
           <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1.5 text-emerald-600">
+              <Shield className="h-4 w-4" />
+              Privacy-first: No data leaves your device
+            </span>
+            <span>•</span>
             <a
               href="https://github.com/radioheavy/prompto"
               className="hover:text-foreground flex items-center gap-1.5 transition-colors"
@@ -456,10 +462,8 @@ function LandingPage() {
               rel="noopener noreferrer"
             >
               <Github className="h-4 w-4" />
-              Kaynak Kod
+              GitHub
             </a>
-            <span>•</span>
-            <span>Tauri + Next.js</span>
           </div>
         </div>
       </footer>
