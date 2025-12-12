@@ -223,8 +223,8 @@ function LandingPage() {
           <h1 className="text-5xl font-bold">Avalon</h1>
         </div>
 
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-4">
-          AI Prompt Editörü
+        <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-4 italic">
+          The mist lifts...
         </p>
 
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-12">
