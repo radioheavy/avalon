@@ -58,7 +58,7 @@ function Logo({ size = 48, className = '' }: { size?: number; className?: string
 
 // GitHub releases URL
 const GITHUB_RELEASES = 'https://github.com/radioheavy/prompto/releases/latest';
-const MAC_DOWNLOAD = 'https://github.com/radioheavy/prompto/releases/download/v0.1.0/Avalon_0.1.0_aarch64.dmg';
+const MAC_DOWNLOAD = 'https://pub-7c0a7463d6c24d1bafdec3a1e227ec2c.r2.dev/releases/Avalon_0.1.0_aarch64.dmg';
 const WINDOWS_DOWNLOAD = 'https://github.com/radioheavy/prompto/releases/latest'; // Windows build coming soon
 
 // Screenshot data
