@@ -128,12 +128,19 @@ function ScreenshotShowcase() {
 }
 
 type View = 'dashboard' | 'editor';
-type AppMode = 'loading' | 'desktop' | 'web';
+type AppMode = 'loading' | 'desktop' | 'web' | 'mobile';
+
+// Mobil algılama
+function isMobileDevice() {
+  if (typeof window === 'undefined') return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    || window.innerWidth < 768;
+}
 
 export default function App() {
   const [appMode, setAppMode] = useState<AppMode>('loading');
 
-  // Tauri kontrolü
+  // Tauri ve mobil kontrolü
   useEffect(() => {
     const checkEnvironment = async () => {
       // Kısa bir delay ile kontrol (hydration için)
@@ -141,6 +148,8 @@ export default function App() {
 
       if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
         setAppMode('desktop');
+      } else if (isMobileDevice()) {
+        setAppMode('mobile');
       } else {
         setAppMode('web');
       }
@@ -159,6 +168,11 @@ export default function App() {
         </div>
       </div>
     );
+  }
+
+  // Mobile mode → Mobile App
+  if (appMode === 'mobile') {
+    return <MobileApp />;
   }
 
   // Web mode → Landing Page
@@ -1388,4 +1402,359 @@ function EditorApp() {
       )}
     </div>
   );
+}
+
+// ============================================
+// MOBILE APP
+// ============================================
+function MobileApp() {
+  const [step, setStep] = useState<'onboarding' | 'provider' | 'apikey' | 'ready' | 'dashboard' | 'editor'>('onboarding');
+  const [provider, setProvider] = useState<'openai' | 'anthropic' | 'google'>('openai');
+  const [apiKey, setApiKey] = useState('');
+  const [isTestingKey, setIsTestingKey] = useState(false);
+  const [keyError, setKeyError] = useState('');
+  const { prompts, addPrompt, setActivePromptId, activePromptId, getCurrentPrompt, updatePromptContent } = usePromptStore();
+  const [aiInput, setAiInput] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
+
+  // Check if already set up
+  useEffect(() => {
+    const isComplete = localStorage.getItem('prompto-mobile-complete');
+    const savedProvider = localStorage.getItem('prompto-ai-provider');
+    const savedKey = sessionStorage.getItem('prompto-api-key');
+
+    if (isComplete && savedProvider && savedKey) {
+      setProvider(savedProvider as 'openai' | 'anthropic' | 'google');
+      setApiKey(savedKey);
+      setStep('dashboard');
+    }
+  }, []);
+
+  const providerNames = {
+    openai: 'OpenAI',
+    anthropic: 'Anthropic',
+    google: 'Google Gemini'
+  };
+
+  const providerColors = {
+    openai: 'from-emerald-500 to-teal-500',
+    anthropic: 'from-orange-500 to-amber-500',
+    google: 'from-blue-500 to-indigo-500'
+  };
+
+  const testApiKey = async () => {
+    if (!apiKey.trim()) {
+      setKeyError('API key gerekli');
+      return;
+    }
+
+    setIsTestingKey(true);
+    setKeyError('');
+
+    try {
+      const response = await fetch('/api/test-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider, apiKey })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        localStorage.setItem('prompto-mobile-complete', 'true');
+        localStorage.setItem('prompto-ai-provider', provider);
+        sessionStorage.setItem('prompto-api-key', apiKey);
+        setStep('ready');
+        setTimeout(() => setStep('dashboard'), 1500);
+      } else {
+        setKeyError(data.error || 'API key geçersiz');
+      }
+    } catch {
+      setKeyError('Bağlantı hatası');
+    } finally {
+      setIsTestingKey(false);
+    }
+  };
+
+  const createNewPrompt = () => {
+    const newPrompt: Prompt = {
+      id: crypto.randomUUID(),
+      name: 'Yeni Prompt',
+      content: {
+        prompt: '',
+        settings: {}
+      },
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    addPrompt(newPrompt);
+    setActivePromptId(newPrompt.id);
+    setStep('editor');
+  };
+
+  const currentPrompt = getCurrentPrompt();
+
+  // AI ile düzenleme
+  const handleAiEdit = async () => {
+    if (!aiInput.trim() || !currentPrompt) return;
+
+    setIsAiLoading(true);
+    try {
+      const response = await fetch('/api/ai/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider,
+          apiKey,
+          instruction: aiInput,
+          currentValue: JSON.stringify(currentPrompt.content, null, 2),
+          fullPrompt: currentPrompt.content
+        })
+      });
+
+      const data = await response.json();
+      if (data.success && data.updatedPrompt) {
+        updatePromptContent(data.updatedPrompt);
+        setAiInput('');
+      }
+    } catch (error) {
+      console.error('AI error:', error);
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  // Onboarding
+  if (step === 'onboarding') {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-violet-50 to-white flex flex-col">
+        <div className="flex-1 flex flex-col items-center justify-center p-6">
+          <Logo size={64} className="mb-4" />
+          <h1 className="text-2xl font-bold mb-2">Prompt Oz</h1>
+          <p className="text-muted-foreground text-center mb-8">
+            AI Prompt Editörü - Mobil
+          </p>
+
+          <Button
+            size="lg"
+            className="w-full max-w-xs gap-2"
+            onClick={() => setStep('provider')}
+          >
+            <Sparkles className="h-5 w-5" />
+            Başla
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Provider seçimi
+  if (step === 'provider') {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-violet-50 to-white p-6">
+        <button onClick={() => setStep('onboarding')} className="mb-6">
+          <ChevronLeft className="h-6 w-6" />
+        </button>
+
+        <h1 className="text-xl font-bold mb-2">AI Sağlayıcı Seç</h1>
+        <p className="text-muted-foreground text-sm mb-6">
+          Hangi AI servisini kullanmak istiyorsun?
+        </p>
+
+        <div className="space-y-3">
+          {(['openai', 'anthropic', 'google'] as const).map((p) => (
+            <button
+              key={p}
+              onClick={() => {
+                setProvider(p);
+                setStep('apikey');
+              }}
+              className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                provider === p ? 'border-primary bg-primary/5' : 'border-neutral-200'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${providerColors[p]} flex items-center justify-center`}>
+                  <Sparkles className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="font-medium">{providerNames[p]}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {p === 'openai' && 'GPT-4, GPT-3.5'}
+                    {p === 'anthropic' && 'Claude 3.5, Claude 3'}
+                    {p === 'google' && 'Gemini Pro, Gemini Ultra'}
+                  </p>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // API Key girişi
+  if (step === 'apikey') {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-violet-50 to-white p-6">
+        <button onClick={() => setStep('provider')} className="mb-6">
+          <ChevronLeft className="h-6 w-6" />
+        </button>
+
+        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${providerColors[provider]} flex items-center justify-center mb-4`}>
+          <Sparkles className="h-6 w-6 text-white" />
+        </div>
+
+        <h1 className="text-xl font-bold mb-2">{providerNames[provider]} API Key</h1>
+        <p className="text-muted-foreground text-sm mb-6">
+          API key'in güvenli şekilde sadece bu oturumda saklanır.
+        </p>
+
+        <Input
+          type="password"
+          placeholder="sk-... veya API key"
+          value={apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
+          className="mb-3"
+        />
+
+        {keyError && (
+          <p className="text-sm text-red-500 mb-3">{keyError}</p>
+        )}
+
+        <Button
+          className="w-full"
+          onClick={testApiKey}
+          disabled={isTestingKey}
+        >
+          {isTestingKey ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <Check className="h-4 w-4 mr-2" />
+          )}
+          {isTestingKey ? 'Test ediliyor...' : 'Bağlan'}
+        </Button>
+      </div>
+    );
+  }
+
+  // Ready
+  if (step === 'ready') {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white flex flex-col items-center justify-center p-6">
+        <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
+          <Check className="h-8 w-8 text-emerald-600" />
+        </div>
+        <h1 className="text-xl font-bold mb-2">Hazır!</h1>
+        <p className="text-muted-foreground">Yönlendiriliyorsun...</p>
+      </div>
+    );
+  }
+
+  // Dashboard
+  if (step === 'dashboard') {
+    return (
+      <div className="min-h-screen bg-neutral-50">
+        {/* Header */}
+        <div className="bg-white border-b px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Logo size={32} />
+            <span className="font-semibold">Prompt Oz</span>
+          </div>
+          <div className={`px-2 py-1 rounded-full text-xs font-medium bg-gradient-to-r ${providerColors[provider]} text-white`}>
+            {providerNames[provider]}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-4">
+          <Button onClick={createNewPrompt} className="w-full mb-4 gap-2">
+            <Plus className="h-4 w-4" />
+            Yeni Prompt
+          </Button>
+
+          {prompts.length === 0 ? (
+            <div className="text-center py-12">
+              <FileJson className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground">Henüz prompt yok</p>
+              <p className="text-sm text-muted-foreground">Yeni bir tane oluştur!</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {prompts.map((prompt) => (
+                <button
+                  key={prompt.id}
+                  onClick={() => {
+                    setActivePromptId(prompt.id);
+                    setStep('editor');
+                  }}
+                  className="w-full p-4 bg-white rounded-xl border text-left"
+                >
+                  <p className="font-medium">{prompt.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(prompt.updatedAt).toLocaleDateString('tr-TR')}
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Editor
+  if (step === 'editor' && currentPrompt) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex flex-col">
+        {/* Header */}
+        <div className="bg-white border-b px-4 py-3 flex items-center gap-3">
+          <button onClick={() => setStep('dashboard')}>
+            <ChevronLeft className="h-6 w-6" />
+          </button>
+          <span className="font-medium flex-1 truncate">{currentPrompt.name}</span>
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(JSON.stringify(currentPrompt.content, null, 2));
+            }}
+            className="p-2"
+          >
+            <Copy className="h-5 w-5 text-muted-foreground" />
+          </button>
+        </div>
+
+        {/* JSON Preview */}
+        <div className="flex-1 p-4 overflow-auto">
+          <pre className="text-xs bg-white p-4 rounded-xl border overflow-x-auto">
+            {JSON.stringify(currentPrompt.content, null, 2)}
+          </pre>
+        </div>
+
+        {/* AI Input */}
+        <div className="bg-white border-t p-4">
+          <div className="flex gap-2">
+            <Input
+              placeholder="AI'ya ne yapmasını iste..."
+              value={aiInput}
+              onChange={(e) => setAiInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAiEdit()}
+              className="flex-1"
+            />
+            <Button onClick={handleAiEdit} disabled={isAiLoading} size="icon">
+              {isAiLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2 text-center">
+            Örn: "description'ı daha detaylı yap"
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }
