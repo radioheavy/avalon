@@ -1,27 +1,35 @@
-# Stage 1: Build
-FROM node:20-alpine AS builder
-
+# Stage 1: Dependencies
+FROM node:20-alpine AS deps
 WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
 
-# Install dependencies
+# Stage 2: Build
+FROM node:20-alpine AS builder
+WORKDIR /app
 COPY package*.json ./
 RUN npm ci
-
-# Copy source
 COPY . .
-
-# Build static export
 RUN npm run build
 
-# Stage 2: Serve with nginx
-FROM nginx:alpine
+# Stage 3: Production
+FROM node:20-alpine AS runner
+WORKDIR /app
 
-# Copy static files
-COPY --from=builder /app/out /usr/share/nginx/html
+ENV NODE_ENV=production
+ENV PORT=3000
 
-# Copy nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
-EXPOSE 80
+# Copy necessary files
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 
-CMD ["nginx", "-g", "daemon off;"]
+USER nextjs
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]

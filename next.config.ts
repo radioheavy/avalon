@@ -1,12 +1,13 @@
 import type { NextConfig } from "next";
 
 // TAURI_ENV varsa static export yap (desktop app için)
-// Yoksa SSR mode (web deployment için - API routes çalışsın)
+// Yoksa standalone mode (web deployment için - API routes + Docker)
 const isTauri = process.env.TAURI_ENV === "true";
 
 const nextConfig: NextConfig = {
-  // Sadece Tauri build'de static export
-  ...(isTauri ? { output: "export", distDir: "out" } : {}),
+  // Tauri: static export, Web: standalone (for Docker)
+  output: isTauri ? "export" : "standalone",
+  ...(isTauri ? { distDir: "out" } : {}),
   images: {
     unoptimized: true,
     remotePatterns: [
