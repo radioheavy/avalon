@@ -127,6 +127,39 @@ Lütfen kullanıcının isteğine göre sadece seçili alanın değerini güncel
     call_claude(full_prompt).await
 }
 
+// Image prompt expansion - Nano Banana Pro için
+#[tauri::command]
+async fn expand_image_prompt(prompt: String) -> Result<ClaudeResponse, String> {
+    let system_prompt = r##"You are a professional prompt engineer for AI image generation. Expand simple prompts into rich, structured JSON for Nano Banana Pro.
+
+OUTPUT FORMAT - Valid JSON only, no markdown:
+{
+  "expanded_prompt": "2-4 sentence detailed description",
+  "scene": "setting/environment",
+  "subjects": [{"type": "identifier", "description": "detailed visual description", "position": "foreground|midground|background"}],
+  "style": "visual style like photorealistic, cinematic, anime",
+  "lighting": "specific lighting setup",
+  "mood": "emotional atmosphere",
+  "color_palette": {"primary": "#hex", "secondary": "#hex", "accent": "#hex", "description": "color mood"},
+  "composition": {"framing": "camera framing", "angle": "camera angle", "focus": "what to focus on"},
+  "text_elements": [{"content": "exact text", "style": "typography", "placement": "location"}] or null,
+  "technical": {"aspect_ratio": "1:1|16:9|9:16|4:3|3:4|21:9", "resolution": "1K|2K|4K", "output_format": "png|jpeg|webp"},
+  "negative_guidance": "what to avoid"
+}
+
+RULES:
+1. Enrich but preserve user intent
+2. Be specific with descriptions
+3. Add textures, materials, atmospheric effects
+4. Use real hex color codes
+5. Extract text exactly as specified
+6. Output ONLY valid JSON"##;
+
+    let full_prompt = format!("{}\n\nUser prompt to expand: {}", system_prompt, prompt);
+
+    call_claude(full_prompt).await
+}
+
 // Claude CLI'ın kurulu olup olmadığını kontrol et
 #[tauri::command]
 async fn check_claude_installed() -> Result<bool, String> {
@@ -390,6 +423,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             call_claude,
             ai_update_value,
+            expand_image_prompt,
             check_claude_installed,
             test_api_key,
             get_models

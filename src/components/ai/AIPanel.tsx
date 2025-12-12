@@ -128,8 +128,17 @@ export function AIPanel() {
     ? getValueAtPath(prompt.content, selectedPath)
     : null;
 
-  // Web API ile çağrı (fallback)
+  // Get API key from session storage
+  const getApiKey = () => {
+    if (typeof window === 'undefined') return '';
+    return sessionStorage.getItem('avalon-api-key') || '';
+  };
+
+  // Web API ile çağrı - multi-provider support
   const callWebAPI = async () => {
+    const apiKey = getApiKey();
+    const provider = currentProvider === 'claude-cli' ? 'anthropic' : currentProvider;
+
     const response = await fetch('/api/ai/update', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -138,6 +147,9 @@ export function AIPanel() {
         currentPath: selectedPath,
         currentValue: selectedValue,
         fullPrompt: prompt?.content,
+        provider,
+        model: selectedModel || undefined,
+        apiKey: apiKey || undefined,
       }),
     });
 

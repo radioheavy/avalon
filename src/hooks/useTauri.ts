@@ -105,11 +105,32 @@ export function useTauri() {
     }
   }, []);
 
+  // Image prompt expansion - Nano Banana Pro için
+  const expandImagePrompt = useCallback(async (prompt: string): Promise<ClaudeResponse> => {
+    if (!invokeFunction) {
+      return {
+        success: false,
+        error: 'Tauri not available. Are you running as a desktop app?',
+      };
+    }
+
+    try {
+      const response = await invokeFunction<ClaudeResponse>('expand_image_prompt', { prompt });
+      return response;
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }, []);
+
   return {
     isDesktopApp,
     isClaudeInstalled,
     isChecking,
     callClaude,
     aiUpdateValue,
+    expandImagePrompt,
   };
 }

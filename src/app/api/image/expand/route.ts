@@ -1,32 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { callLLM, extractJSON, AIProvider } from '@/lib/ai/llm-client';
-
-const SYSTEM_PROMPT = `Sen bir prompt mühendisisin. Kullanıcının image generation prompt'larını düzenlemesine yardım ediyorsun.
-
-Kurallar:
-1. JSON yapısını koru - yeni key ekleme, var olanı değiştir
-2. Sadece istenen alanı güncelle
-3. Değişiklikleri Türkçe açıkla
-4. Tutarlı ol (diğer alanlarla çelişme)
-5. Yaratıcı ol ama mantıklı kal
-6. Yanıtı her zaman aşağıdaki JSON formatında ver:
-
-{
-  "success": true,
-  "updatedValue": <güncellenmiş değer>,
-  "explanation": "Yapılan değişikliklerin kısa açıklaması"
-}
-
-Eğer bir hata olursa:
-{
-  "success": false,
-  "error": "Hata açıklaması"
-}`;
+import { IMAGE_EXPANDER_SYSTEM_PROMPT } from '@/lib/prompts/image-expander';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { userRequest, currentPath, currentValue, fullPrompt, provider = 'anthropic', model, apiKey } = body;
+    const { prompt, provider = 'anthropic', model, apiKey } = body;
+
+    if (!prompt || typeof prompt !== 'string') {
+      return NextResponse.json({
+        success: false,
+        error: 'Prompt is required',
+      });
+    }
 
     // Determine API key - use provided key or fall back to env
     let finalApiKey = apiKey;
@@ -68,27 +54,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const userMessage = `
-Kullanıcı İsteği: "${userRequest}"
-
-Seçili Alan: ${currentPath ? currentPath.join('.') : 'root'}
-
-Mevcut Değer:
-${JSON.stringify(currentValue, null, 2)}
-
-Tam Prompt Yapısı (bağlam için):
-${JSON.stringify(fullPrompt, null, 2)}
-
-Lütfen kullanıcının isteğine göre sadece seçili alanın değerini güncelle ve JSON formatında yanıt ver.
-`;
-
     const response = await callLLM({
       provider: provider as AIProvider,
       model: finalModel,
       apiKey: finalApiKey,
-      systemPrompt: SYSTEM_PROMPT,
-      userMessage,
-      maxTokens: 2048,
+      systemPrompt: IMAGE_EXPANDER_SYSTEM_PROMPT,
+      userMessage: `User prompt to expand: ${prompt}`,
+      maxTokens: 4096,
     });
 
     if (!response.success || !response.content) {
@@ -98,17 +70,29 @@ Lütfen kullanıcının isteğine göre sadece seçili alanın değerini güncel
       });
     }
 
-    // Parse JSON response
-    const result = extractJSON(response.content);
+    // Try to extract JSON from the response
+    const expandedPrompt = extractJSON(response.content);
 
-    if (!result) {
+    if (!expandedPrompt) {
       return NextResponse.json({
         success: false,
-        error: 'Could not parse AI response',
+        error: 'Could not parse AI response as JSON',
       });
     }
 
-    return NextResponse.json(result);
+    // Validate required fields
+    const ep = expandedPrompt as Record<string, unknown>;
+    if (!ep.expanded_prompt || !ep.scene || !ep.style) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid expanded prompt structure',
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      expandedPrompt,
+    });
   } catch (error) {
     return NextResponse.json({
       success: false,
