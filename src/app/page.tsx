@@ -225,15 +225,7 @@ function LandingPage() {
                 <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0 z-10">2</div>
                 <div className="pt-1">
                   <h3 className="font-semibold mb-1">Prompto'yu İndir ve Kur</h3>
-                  <p className="text-muted-foreground text-sm mb-2">Yukarıdaki butona tıkla, DMG dosyasını aç, uygulamayı Applications'a sürükle.</p>
-                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-xs">
-                    <p className="font-medium text-amber-700 dark:text-amber-400 mb-1">⚠️ "Hasar görmüş" uyarısı alırsan:</p>
-                    <p className="text-muted-foreground mb-2">macOS imzasız uygulamaları engelliyor. Şu şekilde açabilirsin:</p>
-                    <code className="bg-background px-2 py-1 rounded block font-mono text-xs">
-                      xattr -cr /Applications/Prompto.app
-                    </code>
-                    <p className="text-muted-foreground mt-2">veya Finder'da sağ tık → "Aç" seç</p>
-                  </div>
+                  <p className="text-muted-foreground text-sm">Yukarıdaki butona tıkla, DMG dosyasını aç, uygulamayı Applications'a sürükle.</p>
                 </div>
               </div>
 
