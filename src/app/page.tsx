@@ -154,6 +154,45 @@ function isStandalone() {
     || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
 }
 
+// Tarayıcı ve platform tespit fonksiyonları
+type BrowserType = 'safari' | 'chrome' | 'firefox' | 'samsung' | 'edge' | 'opera' | 'other';
+type PlatformType = 'ios' | 'android' | 'other';
+
+function detectBrowser(): BrowserType {
+  if (typeof window === 'undefined') return 'other';
+  const ua = navigator.userAgent;
+
+  // Sıralama önemli - daha spesifik olanlar önce
+  if (/SamsungBrowser/i.test(ua)) return 'samsung';
+  if (/Edg/i.test(ua)) return 'edge';
+  if (/OPR|Opera/i.test(ua)) return 'opera';
+  if (/Firefox|FxiOS/i.test(ua)) return 'firefox';
+  if (/CriOS/i.test(ua)) return 'chrome'; // Chrome on iOS
+  if (/Chrome/i.test(ua) && !/Edg/i.test(ua)) return 'chrome';
+  if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) return 'safari';
+
+  return 'other';
+}
+
+function detectPlatform(): PlatformType {
+  if (typeof window === 'undefined') return 'other';
+  const ua = navigator.userAgent;
+
+  if (/iPad|iPhone|iPod/.test(ua)) return 'ios';
+  if (/Android/.test(ua)) return 'android';
+
+  return 'other';
+}
+
+// PWA kurulabilirlik kontrolü (beforeinstallprompt desteği)
+function canUseInstallPrompt(): boolean {
+  if (typeof window === 'undefined') return false;
+  // Chrome, Edge, Opera Android'de beforeinstallprompt destekler
+  const browser = detectBrowser();
+  const platform = detectPlatform();
+  return platform === 'android' && ['chrome', 'edge', 'opera'].includes(browser);
+}
+
 export default function App() {
   const [appMode, setAppMode] = useState<AppMode>('loading');
 
@@ -1012,13 +1051,182 @@ function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
 // ============================================
 // MOBILE LANDING (Mobil tarayıcı için)
 // ============================================
+
+// BeforeInstallPromptEvent tipini tanımla
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
 function MobileLanding() {
-  const [isIOS, setIsIOS] = useState(false);
+  const [browser, setBrowser] = useState<BrowserType>('other');
+  const [platform, setPlatform] = useState<PlatformType>('other');
   const [showInstructions, setShowInstructions] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstalling, setIsInstalling] = useState(false);
 
   useEffect(() => {
-    setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent));
+    setBrowser(detectBrowser());
+    setPlatform(detectPlatform());
+
+    // Chrome/Edge Android için beforeinstallprompt event'ini yakala
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e as BeforeInstallPromptEvent);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
   }, []);
+
+  // Native install prompt kullan (Chrome/Edge Android)
+  const handleNativeInstall = async () => {
+    if (!installPrompt) return;
+
+    setIsInstalling(true);
+    try {
+      await installPrompt.prompt();
+      const result = await installPrompt.userChoice;
+      if (result.outcome === 'accepted') {
+        setInstallPrompt(null);
+      }
+    } catch {
+      // Kullanıcı iptal etti veya hata oluştu
+    }
+    setIsInstalling(false);
+  };
+
+  // iOS'ta Safari dışı tarayıcı mı?
+  const isIOSNonSafari = platform === 'ios' && browser !== 'safari';
+
+  // Native install mümkün mü?
+  const canNativeInstall = installPrompt !== null;
+
+  // Tarayıcı bazlı talimatlar
+  const getInstructions = () => {
+    // iOS Safari
+    if (platform === 'ios' && browser === 'safari') {
+      return {
+        title: 'Safari ile Ana Ekrana Ekle',
+        steps: [
+          { main: 'Paylaş butonuna tıkla', sub: 'Alttaki paylaş simgesi', icon: <Upload className="h-4 w-4" /> },
+          { main: '"Ana Ekrana Ekle" seç', sub: 'Listede aşağı kaydır', icon: <Plus className="h-4 w-4" /> },
+          { main: '"Ekle" butonuna tıkla', sub: 'Sağ üstte', icon: <Check className="h-4 w-4" /> },
+        ]
+      };
+    }
+
+    // iOS Chrome/Firefox/Edge - Safari'ye yönlendir
+    if (platform === 'ios') {
+      return {
+        title: 'Safari Gerekli',
+        warning: true,
+        warningText: `${getBrowserName(browser)} iOS'ta ana ekrana eklemeyi desteklemiyor.`,
+        steps: [
+          { main: 'Bu linki kopyala', sub: window.location.href, icon: <Copy className="h-4 w-4" /> },
+          { main: "Safari'de aç", sub: 'Safari tarayıcısını aç ve linki yapıştır', icon: <Eye className="h-4 w-4" /> },
+          { main: 'Paylaş butonuna tıkla', sub: 'Sonra "Ana Ekrana Ekle"', icon: <Upload className="h-4 w-4" /> },
+        ]
+      };
+    }
+
+    // Android Chrome
+    if (platform === 'android' && browser === 'chrome') {
+      return {
+        title: 'Chrome ile Ana Ekrana Ekle',
+        steps: [
+          { main: 'Menüyü aç', sub: 'Sağ üstteki ⋮ simgesi', icon: <MoreVertical className="h-4 w-4" /> },
+          { main: '"Ana ekrana ekle" seç', sub: 'Veya "Uygulamayı yükle"', icon: <Plus className="h-4 w-4" /> },
+          { main: '"Yükle" butonuna tıkla', sub: 'Onay kutusunda', icon: <Check className="h-4 w-4" /> },
+        ]
+      };
+    }
+
+    // Android Samsung Internet
+    if (platform === 'android' && browser === 'samsung') {
+      return {
+        title: 'Samsung Internet ile Ekle',
+        steps: [
+          { main: 'Menüyü aç', sub: 'Alttaki ≡ simgesi', icon: <MoreVertical className="h-4 w-4" /> },
+          { main: '"Sayfayı ekle" seç', sub: 'Menüden', icon: <Plus className="h-4 w-4" /> },
+          { main: '"Ana ekran" seç', sub: 'Açılan seçeneklerden', icon: <Check className="h-4 w-4" /> },
+        ]
+      };
+    }
+
+    // Android Firefox
+    if (platform === 'android' && browser === 'firefox') {
+      return {
+        title: 'Firefox ile Ana Ekrana Ekle',
+        steps: [
+          { main: 'Menüyü aç', sub: 'Sağ üstteki ⋮ simgesi', icon: <MoreVertical className="h-4 w-4" /> },
+          { main: '"Yükle" seç', sub: 'Menüde yukarıda', icon: <Download className="h-4 w-4" /> },
+          { main: '"Ekle" butonuna tıkla', sub: 'Onay kutusunda', icon: <Check className="h-4 w-4" /> },
+        ]
+      };
+    }
+
+    // Android Edge
+    if (platform === 'android' && browser === 'edge') {
+      return {
+        title: 'Edge ile Ana Ekrana Ekle',
+        steps: [
+          { main: 'Menüyü aç', sub: 'Alttaki ≡ simgesi', icon: <MoreVertical className="h-4 w-4" /> },
+          { main: '"Telefona ekle" seç', sub: 'Menüden', icon: <Plus className="h-4 w-4" /> },
+          { main: '"Yükle" butonuna tıkla', sub: 'Onay kutusunda', icon: <Check className="h-4 w-4" /> },
+        ]
+      };
+    }
+
+    // Android Opera
+    if (platform === 'android' && browser === 'opera') {
+      return {
+        title: 'Opera ile Ana Ekrana Ekle',
+        steps: [
+          { main: 'Menüyü aç', sub: 'Sağ üstteki ⋮ simgesi', icon: <MoreVertical className="h-4 w-4" /> },
+          { main: '"Ana ekran" seç', sub: 'Menüden', icon: <Plus className="h-4 w-4" /> },
+          { main: '"Ekle" butonuna tıkla', sub: 'Onay kutusunda', icon: <Check className="h-4 w-4" /> },
+        ]
+      };
+    }
+
+    // Diğer tüm durumlar için genel talimat
+    return {
+      title: 'Ana Ekrana Ekle',
+      steps: [
+        { main: 'Tarayıcı menüsünü aç', sub: 'Genellikle ⋮ veya ≡ simgesi', icon: <MoreVertical className="h-4 w-4" /> },
+        { main: '"Ana ekrana ekle" seç', sub: 'Veya benzer bir seçenek', icon: <Plus className="h-4 w-4" /> },
+        { main: 'Onaylayın', sub: '"Ekle" veya "Yükle" butonuna tıkla', icon: <Check className="h-4 w-4" /> },
+      ]
+    };
+  };
+
+  const getBrowserName = (b: BrowserType): string => {
+    const names: Record<BrowserType, string> = {
+      safari: 'Safari',
+      chrome: 'Chrome',
+      firefox: 'Firefox',
+      samsung: 'Samsung Internet',
+      edge: 'Edge',
+      opera: 'Opera',
+      other: 'Bu tarayıcı'
+    };
+    return names[b];
+  };
+
+  const instructions = getInstructions();
+
+  // URL kopyalama
+  const handleCopyUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+    } catch {
+      // Fallback
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-violet-50 via-white to-violet-50">
@@ -1028,6 +1236,32 @@ function MobileLanding() {
         <h1 className="text-3xl font-bold mb-2">Avalon</h1>
         <p className="text-muted-foreground">AI Prompt Editörü</p>
       </div>
+
+      {/* iOS Non-Safari Warning Banner */}
+      {isIOSNonSafari && (
+        <div className="mx-6 mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+              <Eye className="h-4 w-4 text-amber-600" />
+            </div>
+            <div>
+              <p className="font-medium text-amber-800 text-sm">Safari Gerekli</p>
+              <p className="text-xs text-amber-700 mt-1">
+                {getBrowserName(browser)} iOS'ta PWA desteklemiyor. Safari'de açın.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 h-8 text-xs border-amber-300 text-amber-700 hover:bg-amber-100"
+                onClick={handleCopyUrl}
+              >
+                <Copy className="h-3 w-3 mr-1" />
+                Linki Kopyala
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Features */}
       <div className="px-6 py-4">
@@ -1071,79 +1305,90 @@ function MobileLanding() {
             Uygulama olarak kullanmak için ana ekrana ekle
           </p>
 
-          <Button
-            className="w-full gap-2 h-12 text-base"
-            onClick={() => setShowInstructions(true)}
-          >
-            <Plus className="h-5 w-5" />
-            Ana Ekrana Ekle
-          </Button>
-
-          {isIOS && (
-            <p className="text-xs text-center text-muted-foreground mt-2">
-              Safari'de <span className="inline-flex items-center"><Upload className="h-3 w-3 mx-1" /></span> simgesine tıkla
-            </p>
+          {/* Native Install Button (Chrome/Edge Android) */}
+          {canNativeInstall ? (
+            <Button
+              className="w-full gap-2 h-12 text-base bg-green-600 hover:bg-green-700"
+              onClick={handleNativeInstall}
+              disabled={isInstalling}
+            >
+              {isInstalling ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Download className="h-5 w-5" />
+              )}
+              Uygulamayı Yükle
+            </Button>
+          ) : (
+            <Button
+              className="w-full gap-2 h-12 text-base"
+              onClick={() => setShowInstructions(true)}
+            >
+              <Plus className="h-5 w-5" />
+              Ana Ekrana Ekle
+            </Button>
           )}
+
+          {/* Browser-specific hint */}
+          <p className="text-xs text-center text-muted-foreground mt-2">
+            {platform === 'ios' && browser === 'safari' && (
+              <span className="inline-flex items-center">
+                <Upload className="h-3 w-3 mx-1" /> simgesine tıkla
+              </span>
+            )}
+            {platform === 'android' && !canNativeInstall && (
+              <span>{getBrowserName(browser)} menüsünden ekleyebilirsin</span>
+            )}
+            {canNativeInstall && (
+              <span className="text-green-600">Tek tıkla yüklenebilir!</span>
+            )}
+          </p>
         </div>
       </div>
 
       {/* Instructions Modal */}
       {showInstructions && (
         <div className="fixed inset-0 bg-black/50 flex items-end z-50" onClick={() => setShowInstructions(false)}>
-          <div className="bg-white w-full rounded-t-3xl p-6 pb-10" onClick={e => e.stopPropagation()}>
+          <div className="bg-white w-full rounded-t-3xl p-6 pb-10 max-h-[80vh] overflow-auto" onClick={e => e.stopPropagation()}>
             <div className="w-12 h-1 bg-neutral-300 rounded-full mx-auto mb-6" />
 
-            <h2 className="text-xl font-bold mb-4 text-center">Ana Ekrana Nasıl Eklenir?</h2>
+            <h2 className="text-xl font-bold mb-4 text-center">{instructions.title}</h2>
 
-            {isIOS ? (
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center shrink-0 text-sm font-bold text-violet-600">1</div>
-                  <div>
-                    <p className="font-medium">Safari'de paylaş butonuna tıkla</p>
-                    <p className="text-sm text-muted-foreground">Alttaki <Upload className="h-4 w-4 inline mx-1" /> simgesi</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center shrink-0 text-sm font-bold text-violet-600">2</div>
-                  <div>
-                    <p className="font-medium">"Ana Ekrana Ekle" seç</p>
-                    <p className="text-sm text-muted-foreground">Listede aşağı kaydır</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center shrink-0 text-sm font-bold text-violet-600">3</div>
-                  <div>
-                    <p className="font-medium">"Ekle" butonuna tıkla</p>
-                    <p className="text-sm text-muted-foreground">Uygulama ana ekranına eklenecek</p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center shrink-0 text-sm font-bold text-violet-600">1</div>
-                  <div>
-                    <p className="font-medium">Tarayıcı menüsünü aç</p>
-                    <p className="text-sm text-muted-foreground">Sağ üstteki ⋮ simgesi</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center shrink-0 text-sm font-bold text-violet-600">2</div>
-                  <div>
-                    <p className="font-medium">"Ana ekrana ekle" seç</p>
-                    <p className="text-sm text-muted-foreground">Veya "Uygulamayı yükle"</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center shrink-0 text-sm font-bold text-violet-600">3</div>
-                  <div>
-                    <p className="font-medium">"Yükle" butonuna tıkla</p>
-                    <p className="text-sm text-muted-foreground">Uygulama ana ekranına eklenecek</p>
-                  </div>
-                </div>
+            {/* Warning for iOS non-Safari */}
+            {'warning' in instructions && instructions.warning && (
+              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800">{instructions.warningText}</p>
               </div>
             )}
+
+            <div className="space-y-4">
+              {instructions.steps.map((step, index) => (
+                <div key={index} className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center shrink-0 text-sm font-bold text-violet-600">
+                    {index + 1}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium flex items-center gap-2">
+                      {step.main}
+                      <span className="text-violet-500">{step.icon}</span>
+                    </p>
+                    <p className="text-sm text-muted-foreground">{step.sub}</p>
+                    {/* Copy URL button for iOS non-Safari first step */}
+                    {isIOSNonSafari && index === 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2 h-8 text-xs"
+                        onClick={handleCopyUrl}
+                      >
+                        <Copy className="h-3 w-3 mr-1" />
+                        Kopyala
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
 
             <Button
               variant="outline"
