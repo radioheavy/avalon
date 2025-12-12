@@ -116,7 +116,7 @@ function LandingPage() {
           <span className="text-foreground font-medium"> tek tıkla düzenle</span> ve
           <span className="text-primary font-semibold"> AI ile otomatik iyileştir</span>.
           <br />
-          <span className="text-sm mt-2 block">Claude Max/Pro aboneliğin varsa API key'e gerek yok!</span>
+          <span className="text-sm mt-2 block">Claude CLI veya OpenAI, Anthropic, Gemini API key ile kullan.</span>
         </p>
 
         {/* Download Section */}
@@ -149,34 +149,66 @@ function LandingPage() {
         </p>
       </section>
 
-      {/* Requirement Banner */}
+      {/* AI Options */}
       <section className="container mx-auto px-4 py-8">
-        <Card className="p-6 bg-amber-500/10 border-amber-500/30 max-w-2xl mx-auto">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
-              <Terminal className="h-5 w-5 text-amber-600" />
-            </div>
-            <div className="text-left">
-              <h3 className="font-semibold text-lg mb-2">⚠️ Önce Claude CLI Kurulumu Gerekli</h3>
-              <p className="text-muted-foreground mb-4">
-                Prompt Oz, bilgisayarına kurulu Claude CLI üzerinden çalışır.
-                Claude Max veya Pro aboneliğin varsa <span className="font-medium text-foreground">ek ücret ödemeden</span> kullanabilirsin.
-              </p>
-              <div className="bg-muted/50 rounded-lg p-4">
-                <p className="text-xs text-muted-foreground mb-2">Terminal'e bu komutu yapıştır:</p>
-                <code className="bg-background px-3 py-2 rounded text-sm block font-mono">
-                  npm install -g @anthropic-ai/claude-code
-                </code>
+        <h2 className="text-2xl font-bold text-center mb-2">Nasıl Kullanılır?</h2>
+        <p className="text-center text-muted-foreground mb-8">İki farklı yöntemle kullanabilirsin</p>
+
+        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          {/* Sol - Claude CLI */}
+          <Card className="p-6 border-primary/30 bg-primary/5">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                <Terminal className="h-5 w-5 text-primary" />
               </div>
-              <p className="text-xs text-muted-foreground mt-3">
-                Claude CLI hakkında daha fazla bilgi için{' '}
-                <a href="https://docs.anthropic.com/en/docs/claude-code" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                  dokümantasyona göz at →
-                </a>
-              </p>
+              <div>
+                <h3 className="font-semibold text-lg">Claude CLI</h3>
+                <span className="text-xs text-primary font-medium">Önerilen</span>
+              </div>
             </div>
-          </div>
-        </Card>
+            <p className="text-muted-foreground text-sm mb-4">
+              Claude Max veya Pro aboneliğin varsa <span className="font-medium text-foreground">ek ücret ödemeden</span> kullanabilirsin.
+            </p>
+            <div className="bg-muted/50 rounded-lg p-3 mb-3">
+              <p className="text-xs text-muted-foreground mb-1">Terminal'e yapıştır:</p>
+              <code className="text-xs font-mono">npm install -g @anthropic-ai/claude-code</code>
+            </div>
+            <a
+              href="https://docs.anthropic.com/en/docs/claude-code"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-primary hover:underline"
+            >
+              Dokümantasyon →
+            </a>
+          </Card>
+
+          {/* Sağ - API Key */}
+          <Card className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                <svg className="h-5 w-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">API Key</h3>
+                <span className="text-xs text-muted-foreground">Alternatif</span>
+              </div>
+            </div>
+            <p className="text-muted-foreground text-sm mb-4">
+              Kendi API key'inle kullan. Desteklenen servisler:
+            </p>
+            <div className="flex flex-wrap gap-2 mb-3">
+              <span className="px-2 py-1 bg-muted rounded text-xs font-medium">OpenAI</span>
+              <span className="px-2 py-1 bg-muted rounded text-xs font-medium">Anthropic</span>
+              <span className="px-2 py-1 bg-muted rounded text-xs font-medium">Google Gemini</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              API key'in sadece oturumda tutulur, hiçbir yerde saklanmaz.
+            </p>
+          </Card>
+        </div>
       </section>
 
       {/* Features */}
