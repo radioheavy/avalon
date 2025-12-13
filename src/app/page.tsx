@@ -769,6 +769,9 @@ function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
   const [isTestingImageGen, setIsTestingImageGen] = useState(false);
   const [imageGenTestResult, setImageGenTestResult] = useState<'success' | 'error' | null>(null);
 
+  // Mobile step state (for step-by-step flow on mobile)
+  const [mobileStep, setMobileStep] = useState<'llm' | 'image-gen'>('llm');
+
   const checkClaudeCLI = async () => {
     setIsChecking(true);
     setStep('cli-check');
@@ -924,14 +927,21 @@ function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
               </p>
             </div>
 
+            {/* Mobile Step Indicator */}
+            <div className="flex md:hidden justify-center gap-2 mb-6">
+              <div className={`w-2 h-2 rounded-full transition-colors ${mobileStep === 'llm' ? 'bg-violet-500' : 'bg-neutral-300'}`} />
+              <div className={`w-2 h-2 rounded-full transition-colors ${mobileStep === 'image-gen' ? 'bg-pink-500' : 'bg-neutral-300'}`} />
+            </div>
+
             <div className="grid md:grid-cols-2 gap-6">
-              {/* Sol Kolon - LLM Providers */}
-              <div>
+              {/* Sol Kolon - LLM Providers (Mobile: only show when mobileStep === 'llm') */}
+              <div className={`${mobileStep !== 'llm' ? 'hidden md:block' : ''}`}>
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-violet-100 flex items-center justify-center">
                     <Sparkles className="h-3.5 w-3.5 text-violet-600" />
                   </div>
                   AI Asistan
+                  <span className="md:hidden text-xs text-muted-foreground font-normal">(1/2)</span>
                 </h3>
 
                 <div className="space-y-3">
@@ -985,17 +995,38 @@ function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
                     </p>
                   </button>
                 </div>
+
+                {/* Mobile: Next button to go to Image Gen */}
+                <div className="mt-6 md:hidden">
+                  <Button
+                    className="w-full"
+                    onClick={() => setMobileStep('image-gen')}
+                  >
+                    Sonraki: Gorsel Uretim
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
               </div>
 
-              {/* Sag Kolon - Image Generation Providers */}
-              <div>
+              {/* Sag Kolon - Image Generation Providers (Mobile: only show when mobileStep === 'image-gen') */}
+              <div className={`${mobileStep !== 'image-gen' ? 'hidden md:block' : ''}`}>
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-pink-100 flex items-center justify-center">
                     <ImageIcon className="h-3.5 w-3.5 text-pink-600" />
                   </div>
                   Gorsel Uretim
                   <span className="text-xs text-muted-foreground font-normal">(Opsiyonel)</span>
+                  <span className="md:hidden text-xs text-muted-foreground font-normal ml-auto">(2/2)</span>
                 </h3>
+
+                {/* Mobile: Back button */}
+                <button
+                  onClick={() => setMobileStep('llm')}
+                  className="md:hidden flex items-center gap-1 text-sm text-muted-foreground mb-3 hover:text-foreground transition-colors"
+                >
+                  <ChevronRight className="h-4 w-4 rotate-180" />
+                  AI Asistan&apos;a don
+                </button>
 
                 <div className="space-y-3">
                   {/* fal.ai Option */}
@@ -1065,8 +1096,8 @@ function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
               </div>
             </div>
 
-            {/* Continue Button */}
-            <div className="mt-8 text-center">
+            {/* Continue Button - Desktop: always visible, Mobile: only on image-gen step */}
+            <div className={`mt-8 text-center ${mobileStep === 'llm' ? 'hidden md:block' : ''}`}>
               <Button
                 size="lg"
                 className="px-8"
