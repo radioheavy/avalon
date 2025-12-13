@@ -751,7 +751,7 @@ function EditorView({ prompt, onBack }: { prompt: Prompt; onBack: () => void }) 
 // ============================================
 // ONBOARDING SCREEN (İlk açılış)
 // ============================================
-type OnboardingStep = 'welcome' | 'cli-check' | 'cli-setup' | 'api-setup' | 'image-gen-setup' | 'ready';
+type OnboardingStep = 'welcome' | 'cli-check' | 'cli-setup' | 'api-setup' | 'image-gen-select' | 'image-gen-setup' | 'ready';
 type AIProvider = 'claude-cli' | 'openai' | 'anthropic' | 'google';
 type ImageGenProvider = 'fal' | 'wiro' | 'none';
 
@@ -783,12 +783,8 @@ function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
 
         if (isInstalled) {
           setSelectedProvider('claude-cli');
-          // Eger image gen seciliyse oraya git, degilse ready
-          if (selectedImageGen !== 'none') {
-            setStep('image-gen-setup');
-          } else {
-            setStep('ready');
-          }
+          // Her zaman image gen secim ekranina git
+          setStep('image-gen-select');
         } else {
           setStep('cli-setup');
         }
@@ -1151,7 +1147,10 @@ function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
                 API Key ile Devam Et
               </Button>
               <button
-                onClick={() => handleComplete('claude-cli')}
+                onClick={() => {
+                  setSelectedProvider('claude-cli');
+                  setStep('image-gen-select');
+                }}
                 className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 AI olmadan devam et
@@ -1263,16 +1262,106 @@ function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
                 variant="outline"
                 className="w-full"
                 onClick={() => {
-                  // Eger image gen seciliyse oraya git, degilse tamamla
-                  if (selectedImageGen !== 'none') {
-                    setStep('image-gen-setup');
-                  } else {
-                    handleComplete(selectedProvider, apiKey);
-                  }
+                  // Her zaman image gen secim ekranina git
+                  setStep('image-gen-select');
                 }}
                 disabled={!apiKey.trim()}
               >
-                {selectedImageGen !== 'none' ? 'Devam Et' : 'Kaydet ve Basla'}
+                Devam Et
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Image Gen Select Step - Gorsel uretim servisi secimi */}
+        {step === 'image-gen-select' && (
+          <div>
+            <div className="flex items-center gap-2 mb-6">
+              <button
+                onClick={() => setStep('api-setup')}
+                className="p-1 hover:bg-muted rounded transition-colors"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <h2 className="text-xl font-bold">Gorsel Uretim</h2>
+              <span className="text-sm text-muted-foreground">(Opsiyonel)</span>
+            </div>
+
+            <p className="text-sm text-muted-foreground mb-6">
+              Prompt&apos;larinizi gorsellestirmek icin bir servis secin veya bu adimi atlayin.
+            </p>
+
+            <div className="space-y-3">
+              {/* fal.ai Option */}
+              <button
+                onClick={() => setSelectedImageGen('fal')}
+                className={`w-full p-4 rounded-lg border-2 transition-colors text-left ${
+                  selectedImageGen === 'fal'
+                    ? 'border-pink-500 bg-pink-50'
+                    : 'border-pink-200 bg-pink-50/50 hover:bg-pink-50'
+                }`}
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-orange-400 flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">fal</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold">fal.ai</h3>
+                    {selectedImageGen === 'fal' && <Check className="h-4 w-4 text-pink-600" />}
+                  </div>
+                </div>
+                <p className="text-xs text-pink-600 mb-1">Flux 2 Pro, Nano Banana Pro, SDXL</p>
+                <p className="text-sm text-muted-foreground">
+                  Hizli ve kaliteli gorsel uretim.
+                </p>
+              </button>
+
+              {/* wiro.ai Option */}
+              <button
+                onClick={() => setSelectedImageGen('wiro')}
+                className={`w-full p-4 rounded-lg border-2 transition-colors text-left ${
+                  selectedImageGen === 'wiro'
+                    ? 'border-purple-500 bg-purple-50'
+                    : 'border-purple-200 bg-purple-50/50 hover:bg-purple-50'
+                }`}
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">W</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold">Wiro.ai</h3>
+                    {selectedImageGen === 'wiro' && <Check className="h-4 w-4 text-purple-600" />}
+                  </div>
+                </div>
+                <p className="text-xs text-purple-600 mb-1">Nano Banana Pro</p>
+                <p className="text-sm text-muted-foreground">
+                  Nano Banana Pro ve diger modeller.
+                </p>
+              </button>
+            </div>
+
+            {/* Actions */}
+            <div className="mt-6 space-y-3">
+              {selectedImageGen !== 'none' && (
+                <Button
+                  className="w-full"
+                  onClick={() => setStep('image-gen-setup')}
+                >
+                  {selectedImageGen === 'fal' ? 'fal.ai' : 'Wiro.ai'} Ayarla
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              )}
+
+              <Button
+                variant={selectedImageGen !== 'none' ? 'outline' : 'default'}
+                className="w-full"
+                onClick={() => {
+                  setSelectedImageGen('none');
+                  handleComplete(selectedProvider, apiKey);
+                }}
+              >
+                {selectedImageGen !== 'none' ? 'Atla ve Basla' : 'Simdilik Atla ve Basla'}
               </Button>
             </div>
           </div>
@@ -1283,7 +1372,7 @@ function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
           <div>
             <div className="flex items-center gap-2 mb-6">
               <button
-                onClick={() => setStep('welcome')}
+                onClick={() => setStep('image-gen-select')}
                 className="p-1 hover:bg-muted rounded transition-colors"
               >
                 <ChevronLeft className="h-5 w-5" />
