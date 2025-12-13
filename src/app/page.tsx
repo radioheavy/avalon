@@ -7,6 +7,7 @@ import { Prompt } from '@/types/prompt';
 import { PromptTree } from '@/components/editor/PromptTree';
 import { AIPanel } from '@/components/ai/AIPanel';
 import { ImageExpanderPanel } from '@/components/image/ImageExpanderPanel';
+import { ReverseEngineerPanel } from '@/components/image/ReverseEngineerPanel';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -1902,6 +1903,7 @@ function EditorApp() {
   const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
   const [view, setView] = useState<View>(currentPromptId ? 'editor' : 'dashboard');
   const [showCreate, setShowCreate] = useState(false);
+  const [showReverseEngineer, setShowReverseEngineer] = useState(false);
   const [newName, setNewName] = useState('');
   const [importJson, setImportJson] = useState('');
   const [showSettings, setShowSettings] = useState(false);
@@ -2087,7 +2089,7 @@ function EditorApp() {
               <p className="text-white/80 mb-6 max-w-md">
                 JSON prompt'larını görsel olarak düzenle, AI ile anında optimize et.
               </p>
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 <Button
                   onClick={() => setShowCreate(true)}
                   className="bg-white text-violet-600 hover:bg-white/90 shadow-lg"
@@ -2095,13 +2097,31 @@ function EditorApp() {
                   <Plus className="h-4 w-4 mr-2" />
                   Yeni Prompt
                 </Button>
+                {currentProvider !== 'claude-cli' ? (
+                  <Button
+                    onClick={() => setShowReverseEngineer(true)}
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg"
+                  >
+                    <Zap className="h-4 w-4 mr-2" />
+                    Tersine Muhendislik
+                  </Button>
+                ) : (
+                  <Button
+                    disabled
+                    className="bg-neutral-300 text-neutral-500 cursor-not-allowed"
+                    title="Bu ozellik icin API key gerekli. Ayarlardan OpenAI, Anthropic veya Google secin."
+                  >
+                    <Zap className="h-4 w-4 mr-2" />
+                    Tersine Muhendislik
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   onClick={handleCreateSample}
                   className="border-white/30 text-white hover:bg-white/10 bg-white/5"
                 >
                   <Sparkles className="h-4 w-4 mr-2" />
-                  Örnek Yükle
+                  Ornek Yukle
                 </Button>
               </div>
             </div>
@@ -2272,6 +2292,11 @@ function EditorApp() {
             </div>
           </Card>
         </div>
+      )}
+
+      {/* Reverse Engineer Modal */}
+      {showReverseEngineer && (
+        <ReverseEngineerPanel onClose={() => setShowReverseEngineer(false)} />
       )}
 
       {/* Settings Modal */}
