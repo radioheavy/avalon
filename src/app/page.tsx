@@ -202,16 +202,11 @@ function LandingPage({ onStart }: { onStart: () => void }) {
   return (
     <div className="min-h-screen bg-[#f5f5f7]">
       {/* Hero Section */}
-      <section className="relative min-h-[90vh] overflow-hidden">
-        {/* Floating gradient orbs */}
-        <div className="absolute top-20 left-1/4 w-96 h-96 bg-violet-500/30 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-20 right-1/4 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 right-1/3 w-64 h-64 bg-pink-500/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
-
+      <section className="min-h-[90vh]">
         {/* Content */}
-        <div className="relative container mx-auto px-4 pt-20 pb-32 text-center">
-          {/* Version badge - glassmorphism */}
-          <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/60 backdrop-blur-sm border border-white/50 shadow-lg shadow-violet-500/10 mb-8">
+        <div className="container mx-auto px-4 pt-20 pb-32 text-center">
+          {/* Version badge */}
+          <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white border border-gray-200 shadow-sm mb-8">
             <Sparkles className="h-4 w-4 text-violet-600" />
             <span className="text-sm font-medium text-violet-700">v0.3.0</span>
             <span className="text-sm text-gray-500">— prompts.chat integration</span>
@@ -230,7 +225,7 @@ function LandingPage({ onStart }: { onStart: () => void }) {
           {/* Feature pills */}
           <div className="flex flex-wrap justify-center gap-3 mb-10">
             {['Visual Editing', 'AI Expansion', 'Reverse Engineering', 'Image Gen'].map(f => (
-              <span key={f} className="px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-gray-200/50 text-sm text-gray-700 shadow-sm">
+              <span key={f} className="px-4 py-2 rounded-full bg-white border border-gray-200 text-sm text-gray-700 shadow-sm">
                 {f}
               </span>
             ))}
@@ -247,7 +242,7 @@ function LandingPage({ onStart }: { onStart: () => void }) {
             </Button>
             <Button
               variant="outline"
-              className="h-14 px-8 text-lg rounded-2xl border-gray-300 bg-white/80 backdrop-blur-sm hover:bg-white"
+              className="h-14 px-8 text-lg rounded-2xl border-gray-300 bg-white hover:bg-gray-50"
               onClick={() => window.open('https://github.com/radioheavy/avalon', '_blank')}
             >
               <Github className="h-5 w-5 mr-2" />
@@ -270,7 +265,7 @@ function LandingPage({ onStart }: { onStart: () => void }) {
       </section>
 
       {/* Screenshot Section - Browser Mockup */}
-      <section className="py-20 bg-white">
+      <section className="py-20">
         <div className="container mx-auto px-4">
           {/* Browser window mockup */}
           <div className="max-w-5xl mx-auto">
@@ -318,7 +313,7 @@ function LandingPage({ onStart }: { onStart: () => void }) {
       </section>
 
       {/* Features Section - Bento Grid */}
-      <section className="py-20 bg-[#f5f5f7]">
+      <section className="py-20">
         <div className="container mx-auto px-4">
           <h2 className="text-4xl font-bold text-center text-gray-900 mb-4">Powerful Features</h2>
           <p className="text-gray-500 text-center mb-12 max-w-2xl mx-auto">
@@ -390,7 +385,7 @@ function LandingPage({ onStart }: { onStart: () => void }) {
       </section>
 
       {/* Providers Section - Compact Strip */}
-      <section className="py-16 bg-white border-y border-gray-100">
+      <section className="py-16">
         <div className="container mx-auto px-4 text-center">
           <p className="text-sm text-gray-500 mb-8">Works with your favorite AI providers</p>
           <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
@@ -420,7 +415,7 @@ function LandingPage({ onStart }: { onStart: () => void }) {
       </section>
 
       {/* How it Works - Horizontal Steps */}
-      <section className="py-20 bg-[#f5f5f7]">
+      <section className="py-20">
         <div className="container mx-auto px-4">
           <h2 className="text-4xl font-bold text-center text-gray-900 mb-12">Get Started in Seconds</h2>
 
@@ -448,16 +443,16 @@ function LandingPage({ onStart }: { onStart: () => void }) {
         </div>
       </section>
 
-      {/* CTA Section - Dark Gradient */}
-      <section className="py-20 bg-gradient-to-br from-gray-900 to-gray-800 text-white">
+      {/* CTA Section */}
+      <section className="py-20">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-4xl font-bold mb-4">Ready to Transform Your Prompts?</h2>
-          <p className="text-gray-400 mb-8 max-w-xl mx-auto">
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">Ready to Transform Your Prompts?</h2>
+          <p className="text-gray-500 mb-8 max-w-xl mx-auto">
             Join creators who use Avalon to craft perfect AI prompts
           </p>
           <Button
             onClick={onStart}
-            className="h-14 px-10 text-lg rounded-2xl bg-white text-gray-900 hover:bg-gray-100 shadow-lg border-0"
+            className="h-14 px-10 text-lg rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 shadow-lg shadow-violet-500/25 border-0"
           >
             <Sparkles className="h-5 w-5 mr-2" />
             Launch Avalon
@@ -466,7 +461,7 @@ function LandingPage({ onStart }: { onStart: () => void }) {
       </section>
 
       {/* Footer - Minimal Centered */}
-      <footer className="py-12 bg-white border-t border-gray-100">
+      <footer className="py-12">
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center gap-6">
             {/* Logo + name */}
