@@ -142,7 +142,7 @@ function ScreenshotShowcase() {
 }
 
 type View = 'dashboard' | 'editor';
-type AppMode = 'loading' | 'app' | 'mobile-web' | 'mobile-pwa';
+type AppMode = 'loading' | 'web' | 'app' | 'mobile-web' | 'mobile-pwa';
 
 // Mobil algılama
 function isMobileDevice() {
@@ -214,7 +214,13 @@ export default function App() {
           setAppMode('mobile-web');
         }
       } else {
-        setAppMode('app');
+        // Desktop: Onboarding tamamlandı mı kontrol et
+        const hasCompletedOnboarding = localStorage.getItem('avalon-onboarding-complete') === 'true';
+        if (hasCompletedOnboarding) {
+          setAppMode('app');
+        } else {
+          setAppMode('web');
+        }
       }
     };
 
@@ -243,6 +249,11 @@ export default function App() {
     return <MobileLanding />;
   }
 
+  // Web mode → Landing Page
+  if (appMode === 'web') {
+    return <LandingPage onStart={() => setAppMode('app')} />;
+  }
+
   // App mode → Editor App
   return <EditorApp />;
 }
@@ -250,7 +261,7 @@ export default function App() {
 // ============================================
 // LANDING PAGE (Web için)
 // ============================================
-function LandingPage() {
+function LandingPage({ onStart }: { onStart: () => void }) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted">
       {/* Hero Section */}
@@ -273,99 +284,100 @@ function LandingPage() {
           <span className="text-sm mt-2 block">fal.ai veya Wiro ile prompt'larından görsel üret.</span>
         </p>
 
-        {/* Download Section */}
-        <Card className="max-w-xl mx-auto p-8 mb-8">
-          <h2 className="text-lg font-semibold mb-6">Masaüstü Uygulamasını İndir</h2>
+        {/* Start Button */}
+        <Button size="lg" className="gap-2 text-lg px-8 py-6" onClick={onStart}>
+          <Sparkles className="h-6 w-6" />
+          Hemen Başla
+        </Button>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
-            <Button size="lg" className="gap-2 text-lg px-8 py-6" asChild>
-              <a href={MAC_DOWNLOAD}>
-                <Apple className="h-6 w-6" />
-                Mac için İndir
-              </a>
-            </Button>
-
-            <Button size="lg" variant="outline" className="gap-2 text-lg px-8 py-6 opacity-50 cursor-not-allowed" disabled>
-              <Monitor className="h-6 w-6" />
-              Windows (Yakında)
-            </Button>
-          </div>
-
-          <div className="text-sm text-muted-foreground space-y-1">
-            <p>✓ macOS 11+ (Apple Silicon)</p>
-            <p>✓ Sadece 16MB - Hızlı indirme</p>
-            <p>✓ Kurulum gerektirmez - Aç ve kullan</p>
-          </div>
-        </Card>
-
-        <p className="text-xs text-muted-foreground">
-          Versiyon 0.3.0
+        <p className="text-xs text-muted-foreground mt-4">
+          Ücretsiz • Kayıt gerektirmez • API key ile çalışır
         </p>
       </section>
 
       {/* Screenshot Showcase */}
       <ScreenshotShowcase />
 
-      {/* AI Options */}
+      {/* AI Providers */}
       <section className="container mx-auto px-4 py-8">
-        <h2 className="text-2xl font-bold text-center mb-2">Nasıl Kullanılır?</h2>
-        <p className="text-center text-muted-foreground mb-8">İki farklı yöntemle kullanabilirsin</p>
+        <h2 className="text-2xl font-bold text-center mb-2">Desteklenen AI Servisleri</h2>
+        <p className="text-center text-muted-foreground mb-8">Kendi API key&apos;inle kullan</p>
 
-        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-          {/* Sol - Claude CLI */}
+        <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          {/* Anthropic */}
           <Card className="p-6 border-primary/30 bg-primary/5">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                <Terminal className="h-5 w-5 text-primary" />
+                <Sparkles className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-lg">Claude CLI</h3>
+                <h3 className="font-semibold text-lg">Anthropic</h3>
                 <span className="text-xs text-primary font-medium">Önerilen</span>
               </div>
             </div>
-            <p className="text-muted-foreground text-sm mb-4">
-              Claude Max veya Pro aboneliğin varsa <span className="font-medium text-foreground">ek ücret ödemeden</span> kullanabilirsin.
+            <p className="text-muted-foreground text-sm mb-2">
+              Claude Sonnet 4, Claude Opus ve diğer Claude modelleri.
             </p>
-            <div className="bg-muted/50 rounded-lg p-3 mb-3">
-              <p className="text-xs text-muted-foreground mb-1">Terminal'e yapıştır:</p>
-              <code className="text-xs font-mono">npm install -g @anthropic-ai/claude-code</code>
-            </div>
             <a
-              href="https://docs.anthropic.com/en/docs/claude-code"
+              href="https://console.anthropic.com/"
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-primary hover:underline"
             >
-              Dokümantasyon →
+              API Key Al →
             </a>
           </Card>
 
-          {/* Sağ - API Key */}
+          {/* OpenAI */}
           <Card className="p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
-                <svg className="h-5 w-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                </svg>
+              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                <Zap className="h-5 w-5 text-emerald-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-lg">API Key</h3>
-                <span className="text-xs text-muted-foreground">Alternatif</span>
+                <h3 className="font-semibold text-lg">OpenAI</h3>
               </div>
             </div>
-            <p className="text-muted-foreground text-sm mb-4">
-              Kendi API key'inle kullan. Desteklenen servisler:
+            <p className="text-muted-foreground text-sm mb-2">
+              GPT-4o, GPT-4 Turbo ve diğer OpenAI modelleri.
             </p>
-            <div className="flex flex-wrap gap-2 mb-3">
-              <span className="px-2 py-1 bg-muted rounded text-xs font-medium">OpenAI</span>
-              <span className="px-2 py-1 bg-muted rounded text-xs font-medium">Anthropic</span>
-              <span className="px-2 py-1 bg-muted rounded text-xs font-medium">Google Gemini</span>
+            <a
+              href="https://platform.openai.com/api-keys"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-emerald-600 hover:underline"
+            >
+              API Key Al →
+            </a>
+          </Card>
+
+          {/* Google */}
+          <Card className="p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                <MessageSquare className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">Google Gemini</h3>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              API key'in sadece oturumda tutulur, hiçbir yerde saklanmaz.
+            <p className="text-muted-foreground text-sm mb-2">
+              Gemini Pro, Gemini Flash ve diğer modeller.
             </p>
+            <a
+              href="https://aistudio.google.com/apikey"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-blue-600 hover:underline"
+            >
+              API Key Al →
+            </a>
           </Card>
         </div>
+
+        <p className="text-center text-xs text-muted-foreground mt-6">
+          API key&apos;in sadece oturumda tutulur, hiçbir yerde saklanmaz.
+        </p>
       </section>
 
       {/* Features */}
@@ -428,8 +440,8 @@ function LandingPage() {
 
       {/* How it works */}
       <section className="container mx-auto px-4 py-16 bg-muted/50">
-        <h2 className="text-3xl font-bold text-center mb-4">Kurulum</h2>
-        <p className="text-center text-muted-foreground mb-12">4 adımda hazır</p>
+        <h2 className="text-3xl font-bold text-center mb-4">Nasıl Başlarım?</h2>
+        <p className="text-center text-muted-foreground mb-12">3 adımda hazır</p>
 
         <div className="max-w-2xl mx-auto">
           <div className="relative">
@@ -440,29 +452,21 @@ function LandingPage() {
               <div className="flex items-start gap-6 relative">
                 <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0 z-10">1</div>
                 <div className="pt-1">
-                  <h3 className="font-semibold mb-1">Avalon'yı İndir</h3>
-                  <p className="text-muted-foreground text-sm">Yukarıdaki butona tıkla, DMG dosyasını aç, uygulamayı Applications'a sürükle.</p>
+                  <h3 className="font-semibold mb-1">AI Provider Seç</h3>
+                  <p className="text-muted-foreground text-sm">Anthropic, OpenAI veya Google&apos;dan birini seç ve API key&apos;ini gir.</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-6 relative">
                 <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0 z-10">2</div>
                 <div className="pt-1">
-                  <h3 className="font-semibold mb-1">AI Bağlantısını Ayarla</h3>
-                  <p className="text-muted-foreground text-sm">Claude CLI kur veya OpenAI, Anthropic, Gemini API key'ini gir.</p>
+                  <h3 className="font-semibold mb-1">Görsel Üretimi Ayarla (Opsiyonel)</h3>
+                  <p className="text-muted-foreground text-sm">fal.ai veya Wiro API key&apos;ini gir, prompt&apos;larından görsel üret.</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-6 relative">
                 <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0 z-10">3</div>
-                <div className="pt-1">
-                  <h3 className="font-semibold mb-1">Görsel Üretimi Ayarla (Opsiyonel)</h3>
-                  <p className="text-muted-foreground text-sm">fal.ai veya Wiro API key'ini gir, prompt'larından görsel üret.</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-6 relative">
-                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0 z-10">4</div>
                 <div className="pt-1">
                   <h3 className="font-semibold mb-1">Kullanmaya Başla</h3>
                   <p className="text-muted-foreground text-sm">Prompt oluştur, genişlet, tersine mühendislik yap veya görsel üret!</p>
@@ -480,7 +484,7 @@ function LandingPage() {
 
         <div className="max-w-3xl mx-auto grid sm:grid-cols-2 gap-4">
           {[
-            { text: 'Çoklu AI Desteği', desc: 'OpenAI, Anthropic, Gemini, Claude CLI' },
+            { text: 'Çoklu AI Desteği', desc: 'OpenAI, Anthropic, Google Gemini' },
             { text: 'Görsel Üretim', desc: 'fal.ai ve Wiro entegrasyonu' },
             { text: 'Prompt Genişlet', desc: 'Basit prompt\'u zenginleştir' },
             { text: 'Tersine Mühendislik', desc: 'Görselden prompt çıkar' },
@@ -501,13 +505,11 @@ function LandingPage() {
       {/* CTA */}
       <section className="container mx-auto px-4 py-16 text-center">
         <Card className="max-w-lg mx-auto p-8 bg-primary/5 border-primary/20">
-          <h2 className="text-2xl font-bold mb-2">Hemen Dene</h2>
-          <p className="text-muted-foreground mb-6">Claude Max/Pro aboneliğin varsa hemen başlayabilirsin</p>
-          <Button size="lg" className="gap-2" asChild>
-            <a href={MAC_DOWNLOAD}>
-              <Download className="h-5 w-5" />
-              Mac için İndir
-            </a>
+          <h2 className="text-2xl font-bold mb-2">Hemen Başla</h2>
+          <p className="text-muted-foreground mb-6">API key'ini gir ve prompt düzenlemeye başla</p>
+          <Button size="lg" className="gap-2" onClick={onStart}>
+            <Sparkles className="h-5 w-5" />
+            Web&apos;de Başla
           </Button>
         </Card>
       </section>
