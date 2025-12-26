@@ -71,11 +71,11 @@ const WINDOWS_DOWNLOAD = 'https://github.com/radioheavy/prompto/releases/latest'
 
 // Screenshot data
 const screenshots = [
-  { src: '/a/new-1-welcome.png', rotate: -15, x: -320, label: 'Hoş Geldin' },
+  { src: '/a/new-1-welcome.png', rotate: -15, x: -320, label: 'Welcome' },
   { src: '/a/new-2-dashboard.png', rotate: -8, x: -160, label: 'Dashboard' },
-  { src: '/a/new-3-editor.png', rotate: 0, x: 0, label: 'Editör' },
-  { src: '/a/new-4-expander.png', rotate: 8, x: 160, label: 'Prompt Genişlet' },
-  { src: '/a/new-6-reverse-result.png', rotate: 15, x: 320, label: 'Tersine Mühendislik' },
+  { src: '/a/new-3-editor.png', rotate: 0, x: 0, label: 'Editor' },
+  { src: '/a/new-4-expander.png', rotate: 8, x: 160, label: 'Prompt Expander' },
+  { src: '/a/new-6-reverse-result.png', rotate: 15, x: 320, label: 'Reverse Engineering' },
 ];
 
 function ScreenshotShowcase() {
@@ -83,8 +83,8 @@ function ScreenshotShowcase() {
 
   return (
     <section className="container mx-auto px-4 py-16 overflow-hidden">
-      <h2 className="text-2xl font-bold text-center mb-2">Nasıl Görünüyor?</h2>
-      <p className="text-center text-muted-foreground mb-12">Uygulamadan ekran görüntüleri</p>
+      <h2 className="text-2xl font-bold text-center mb-2">See It In Action</h2>
+      <p className="text-center text-muted-foreground mb-12">Screenshots from the app</p>
 
       <div className="relative h-[450px] max-w-6xl mx-auto">
         {/* Fixed hover trigger zones - these don't move */}
@@ -270,32 +270,38 @@ function LandingPage({ onStart }: { onStart: () => void }) {
     <div className="min-h-screen bg-gradient-to-b from-background to-muted">
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-20 text-center">
+        {/* Version Badge */}
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-violet-100 text-violet-700 text-sm font-medium mb-6">
+          <Sparkles className="h-4 w-4" />
+          v0.3.0 — Now with prompts.chat integration
+        </div>
+
         <div className="flex items-center justify-center gap-3 mb-6">
           <Logo size={56} />
           <h1 className="text-5xl font-bold">Avalon</h1>
         </div>
 
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-4 italic">
-          The mist lifts...
+          The AI-powered prompt editor for creators
         </p>
 
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-12">
-          JSON prompt'larını <span className="text-foreground font-medium">görsel ağaç yapısında</span> gör,
-          <span className="text-foreground font-medium"> tek tıkla düzenle</span>,
-          <span className="text-primary font-semibold"> AI ile prompt genişlet</span> ve
-          <span className="text-primary font-semibold"> görselden tersine mühendislik</span> yap.
+          View JSON prompts in a <span className="text-foreground font-medium">visual tree structure</span>,
+          <span className="text-foreground font-medium"> edit with one click</span>,
+          <span className="text-primary font-semibold"> expand prompts with AI</span>, and
+          <span className="text-primary font-semibold"> reverse engineer from images</span>.
           <br />
-          <span className="text-sm mt-2 block">fal.ai veya Wiro ile prompt'larından görsel üret.</span>
+          <span className="text-sm mt-2 block">Generate images with fal.ai or Wiro. Import prompts from prompts.chat.</span>
         </p>
 
         {/* Start Button */}
         <Button size="lg" className="gap-2 text-lg px-8 py-6" onClick={onStart}>
           <Sparkles className="h-6 w-6" />
-          Hemen Başla
+          Get Started
         </Button>
 
         <p className="text-xs text-muted-foreground mt-4">
-          Ücretsiz • Kayıt gerektirmez • API key ile çalışır
+          Free • No registration • Works with your API key
         </p>
       </section>
 
@@ -304,8 +310,8 @@ function LandingPage({ onStart }: { onStart: () => void }) {
 
       {/* AI Providers */}
       <section className="container mx-auto px-4 py-8">
-        <h2 className="text-2xl font-bold text-center mb-2">Desteklenen AI Servisleri</h2>
-        <p className="text-center text-muted-foreground mb-8">Kendi API key&apos;inle kullan</p>
+        <h2 className="text-2xl font-bold text-center mb-2">Supported AI Services</h2>
+        <p className="text-center text-muted-foreground mb-8">Use your own API key</p>
 
         <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
           {/* Anthropic */}
@@ -319,7 +325,7 @@ function LandingPage({ onStart }: { onStart: () => void }) {
               </div>
             </div>
             <p className="text-muted-foreground text-sm mb-2">
-              Claude Sonnet 4, Claude Opus ve diğer Claude modelleri.
+              Claude Sonnet 4, Claude Opus and other Claude models.
             </p>
             <a
               href="https://console.anthropic.com/"
@@ -327,7 +333,7 @@ function LandingPage({ onStart }: { onStart: () => void }) {
               rel="noopener noreferrer"
               className="text-xs text-primary hover:underline"
             >
-              API Key Al →
+              Get API Key →
             </a>
           </Card>
 
@@ -342,7 +348,7 @@ function LandingPage({ onStart }: { onStart: () => void }) {
               </div>
             </div>
             <p className="text-muted-foreground text-sm mb-2">
-              GPT-4o, GPT-4 Turbo ve diğer OpenAI modelleri.
+              GPT-4o, GPT-4 Turbo and other OpenAI models.
             </p>
             <a
               href="https://platform.openai.com/api-keys"
@@ -350,7 +356,7 @@ function LandingPage({ onStart }: { onStart: () => void }) {
               rel="noopener noreferrer"
               className="text-xs text-emerald-600 hover:underline"
             >
-              API Key Al →
+              Get API Key →
             </a>
           </Card>
 
@@ -365,7 +371,7 @@ function LandingPage({ onStart }: { onStart: () => void }) {
               </div>
             </div>
             <p className="text-muted-foreground text-sm mb-2">
-              Gemini Pro, Gemini Flash ve diğer modeller.
+              Gemini Pro, Gemini Flash and other models.
             </p>
             <a
               href="https://aistudio.google.com/apikey"
@@ -373,69 +379,77 @@ function LandingPage({ onStart }: { onStart: () => void }) {
               rel="noopener noreferrer"
               className="text-xs text-blue-600 hover:underline"
             >
-              API Key Al →
+              Get API Key →
             </a>
           </Card>
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          API key&apos;in sadece oturumda tutulur, hiçbir yerde saklanmaz.
+          Your API key is only stored in session memory, never saved anywhere.
         </p>
       </section>
 
       {/* Features */}
       <section className="container mx-auto px-4 py-16">
-        <h2 className="text-3xl font-bold text-center mb-4">Ne İşe Yarar?</h2>
+        <h2 className="text-3xl font-bold text-center mb-4">What Can You Do?</h2>
         <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-          AI image generation, chatbot ya da herhangi bir AI sistemi için yazdığın prompt'ları kolayca yönet
+          Easily manage prompts for AI image generation, chatbots, or any AI system
         </p>
 
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
           <Card className="p-6 text-center">
             <Eye className="h-10 w-10 text-primary mx-auto mb-4" />
-            <h3 className="font-semibold text-lg mb-2">Görsel Ağaç Yapısı</h3>
+            <h3 className="font-semibold text-lg mb-2">Visual Tree Structure</h3>
             <p className="text-muted-foreground text-sm">
-              Yüzlerce satırlık JSON'u anlaşılır bir ağaç olarak gör. Her alan açılır-kapanır.
+              View hundreds of lines of JSON as an understandable tree. Every field is collapsible.
             </p>
           </Card>
 
           <Card className="p-6 text-center">
             <Zap className="h-10 w-10 text-primary mx-auto mb-4" />
-            <h3 className="font-semibold text-lg mb-2">Tek Tıkla Düzenleme</h3>
+            <h3 className="font-semibold text-lg mb-2">One-Click Editing</h3>
             <p className="text-muted-foreground text-sm">
-              Değiştirmek istediğin alana tıkla, yeni değeri yaz. Boolean'lar için toggle.
+              Click on any field to edit, type the new value. Toggle for booleans.
             </p>
           </Card>
 
           <Card className="p-6 text-center">
             <MessageSquare className="h-10 w-10 text-primary mx-auto mb-4" />
-            <h3 className="font-semibold text-lg mb-2">AI ile Düzenleme</h3>
+            <h3 className="font-semibold text-lg mb-2">AI-Powered Editing</h3>
             <p className="text-muted-foreground text-sm">
-              "Lighting'i daha dramatik yap" yaz, AI otomatik güncellesin.
+              Type &quot;make the lighting more dramatic&quot; and let AI update it automatically.
             </p>
           </Card>
 
           <Card className="p-6 text-center border-primary/30 bg-primary/5">
             <Sparkles className="h-10 w-10 text-primary mx-auto mb-4" />
-            <h3 className="font-semibold text-lg mb-2">Prompt Genişlet</h3>
+            <h3 className="font-semibold text-lg mb-2">Prompt Expansion</h3>
             <p className="text-muted-foreground text-sm">
-              Basit bir prompt'u zengin, detaylı bir prompt'a dönüştür. Sahne, stil, ışık, renk ekle.
+              Transform a simple prompt into a rich, detailed one. Add scene, style, lighting, colors.
             </p>
           </Card>
 
           <Card className="p-6 text-center border-purple-500/30 bg-purple-500/5">
             <RotateCcw className="h-10 w-10 text-purple-500 mx-auto mb-4" />
-            <h3 className="font-semibold text-lg mb-2">Tersine Mühendislik</h3>
+            <h3 className="font-semibold text-lg mb-2">Reverse Engineering</h3>
             <p className="text-muted-foreground text-sm">
-              Bir görseli yükle, AI analiz etsin ve onu yeniden üretecek prompt'u çıkarsın.
+              Upload an image, let AI analyze it and extract the prompt that could recreate it.
             </p>
           </Card>
 
           <Card className="p-6 text-center border-pink-500/30 bg-pink-500/5">
             <ImageIcon className="h-10 w-10 text-pink-500 mx-auto mb-4" />
-            <h3 className="font-semibold text-lg mb-2">Görsel Üretim</h3>
+            <h3 className="font-semibold text-lg mb-2">Image Generation</h3>
             <p className="text-muted-foreground text-sm">
-              fal.ai veya Wiro ile prompt'larından direkt görsel üretin. Flux, SDXL ve daha fazlası.
+              Generate images directly from your prompts with fal.ai or Wiro. Flux, SDXL and more.
+            </p>
+          </Card>
+
+          <Card className="p-6 text-center border-violet-500/30 bg-violet-500/5 md:col-start-2">
+            <Globe className="h-10 w-10 text-violet-500 mx-auto mb-4" />
+            <h3 className="font-semibold text-lg mb-2">Browse & Import</h3>
+            <p className="text-muted-foreground text-sm">
+              Discover thousands of prompts from prompts.chat. Search, filter, and import with one click.
             </p>
           </Card>
         </div>
@@ -443,8 +457,8 @@ function LandingPage({ onStart }: { onStart: () => void }) {
 
       {/* How it works */}
       <section className="container mx-auto px-4 py-16 bg-muted/50">
-        <h2 className="text-3xl font-bold text-center mb-4">Nasıl Başlarım?</h2>
-        <p className="text-center text-muted-foreground mb-12">3 adımda hazır</p>
+        <h2 className="text-3xl font-bold text-center mb-4">How to Get Started?</h2>
+        <p className="text-center text-muted-foreground mb-12">Ready in 3 steps</p>
 
         <div className="max-w-2xl mx-auto">
           <div className="relative">
@@ -455,24 +469,24 @@ function LandingPage({ onStart }: { onStart: () => void }) {
               <div className="flex items-start gap-6 relative">
                 <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0 z-10">1</div>
                 <div className="pt-1">
-                  <h3 className="font-semibold mb-1">AI Provider Seç</h3>
-                  <p className="text-muted-foreground text-sm">Anthropic, OpenAI veya Google&apos;dan birini seç ve API key&apos;ini gir.</p>
+                  <h3 className="font-semibold mb-1">Choose AI Provider</h3>
+                  <p className="text-muted-foreground text-sm">Select Anthropic, OpenAI or Google and enter your API key.</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-6 relative">
                 <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0 z-10">2</div>
                 <div className="pt-1">
-                  <h3 className="font-semibold mb-1">Görsel Üretimi Ayarla (Opsiyonel)</h3>
-                  <p className="text-muted-foreground text-sm">fal.ai veya Wiro API key&apos;ini gir, prompt&apos;larından görsel üret.</p>
+                  <h3 className="font-semibold mb-1">Set Up Image Generation (Optional)</h3>
+                  <p className="text-muted-foreground text-sm">Enter your fal.ai or Wiro API key to generate images from prompts.</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-6 relative">
                 <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0 z-10">3</div>
                 <div className="pt-1">
-                  <h3 className="font-semibold mb-1">Kullanmaya Başla</h3>
-                  <p className="text-muted-foreground text-sm">Prompt oluştur, genişlet, tersine mühendislik yap veya görsel üret!</p>
+                  <h3 className="font-semibold mb-1">Start Creating</h3>
+                  <p className="text-muted-foreground text-sm">Create prompts, expand them, reverse engineer, or generate images!</p>
                 </div>
               </div>
             </div>
@@ -482,17 +496,19 @@ function LandingPage({ onStart }: { onStart: () => void }) {
 
       {/* Benefits */}
       <section className="container mx-auto px-4 py-16">
-        <h2 className="text-3xl font-bold text-center mb-4">Neden Avalon?</h2>
-        <p className="text-center text-muted-foreground mb-12">Prompt yönetimini kolaylaştıran özellikler</p>
+        <h2 className="text-3xl font-bold text-center mb-4">Why Avalon?</h2>
+        <p className="text-center text-muted-foreground mb-12">Features that make prompt management easy</p>
 
         <div className="max-w-3xl mx-auto grid sm:grid-cols-2 gap-4">
           {[
-            { text: 'Çoklu AI Desteği', desc: 'OpenAI, Anthropic, Google Gemini' },
-            { text: 'Görsel Üretim', desc: 'fal.ai ve Wiro entegrasyonu' },
-            { text: 'Prompt Genişlet', desc: 'Basit prompt\'u zenginleştir' },
-            { text: 'Tersine Mühendislik', desc: 'Görselden prompt çıkar' },
-            { text: 'Tamamen ücretsiz', desc: 'Açık kaynak, ücret yok' },
-            { text: 'Güvenli', desc: 'API key saklanmaz, sadece oturumda' },
+            { text: 'Multi-AI Support', desc: 'OpenAI, Anthropic, Google Gemini' },
+            { text: 'Image Generation', desc: 'fal.ai and Wiro integration' },
+            { text: 'Prompt Expansion', desc: 'Enrich simple prompts with AI' },
+            { text: 'Reverse Engineering', desc: 'Extract prompts from images' },
+            { text: 'Browse & Import', desc: 'Thousands of prompts from prompts.chat' },
+            { text: 'Completely Free', desc: 'Open source, no charges' },
+            { text: 'Privacy First', desc: 'API keys stored in session only' },
+            { text: 'No Registration', desc: 'Start using immediately' },
           ].map((benefit, i) => (
             <Card key={i} className="p-4 flex items-start gap-3">
               <Check className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
@@ -508,11 +524,11 @@ function LandingPage({ onStart }: { onStart: () => void }) {
       {/* CTA */}
       <section className="container mx-auto px-4 py-16 text-center">
         <Card className="max-w-lg mx-auto p-8 bg-primary/5 border-primary/20">
-          <h2 className="text-2xl font-bold mb-2">Hemen Başla</h2>
-          <p className="text-muted-foreground mb-6">API key'ini gir ve prompt düzenlemeye başla</p>
+          <h2 className="text-2xl font-bold mb-2">Get Started Now</h2>
+          <p className="text-muted-foreground mb-6">Enter your API key and start editing prompts</p>
           <Button size="lg" className="gap-2" onClick={onStart}>
             <Sparkles className="h-5 w-5" />
-            Web&apos;de Başla
+            Launch App
           </Button>
         </Card>
       </section>
@@ -532,7 +548,7 @@ function LandingPage({ onStart }: { onStart: () => void }) {
             </span>
             <span>•</span>
             <a
-              href="https://github.com/radioheavy/prompto"
+              href="https://github.com/radioheavy/avalon"
               className="hover:text-foreground flex items-center gap-1.5 transition-colors"
               target="_blank"
               rel="noopener noreferrer"
@@ -1479,30 +1495,30 @@ function MobileLanding() {
   // Native install mümkün mü?
   const canNativeInstall = installPrompt !== null;
 
-  // Tarayıcı bazlı talimatlar
+  // Browser-specific instructions
   const getInstructions = () => {
     // iOS Safari
     if (platform === 'ios' && browser === 'safari') {
       return {
-        title: 'Safari ile Ana Ekrana Ekle',
+        title: 'Add to Home Screen with Safari',
         steps: [
-          { main: 'Paylaş butonuna tıkla', sub: 'Alttaki paylaş simgesi', icon: <Upload className="h-4 w-4" /> },
-          { main: '"Ana Ekrana Ekle" seç', sub: 'Listede aşağı kaydır', icon: <Plus className="h-4 w-4" /> },
-          { main: '"Ekle" butonuna tıkla', sub: 'Sağ üstte', icon: <Check className="h-4 w-4" /> },
+          { main: 'Tap the Share button', sub: 'Share icon at the bottom', icon: <Upload className="h-4 w-4" /> },
+          { main: 'Select "Add to Home Screen"', sub: 'Scroll down in the list', icon: <Plus className="h-4 w-4" /> },
+          { main: 'Tap "Add"', sub: 'Top right corner', icon: <Check className="h-4 w-4" /> },
         ]
       };
     }
 
-    // iOS Chrome/Firefox/Edge - Safari'ye yönlendir
+    // iOS Chrome/Firefox/Edge - Redirect to Safari
     if (platform === 'ios') {
       return {
-        title: 'Safari Gerekli',
+        title: 'Safari Required',
         warning: true,
-        warningText: `${getBrowserName(browser)} iOS'ta ana ekrana eklemeyi desteklemiyor.`,
+        warningText: `${getBrowserName(browser)} doesn't support adding to home screen on iOS.`,
         steps: [
-          { main: 'Bu linki kopyala', sub: window.location.href, icon: <Copy className="h-4 w-4" /> },
-          { main: "Safari'de aç", sub: 'Safari tarayıcısını aç ve linki yapıştır', icon: <Eye className="h-4 w-4" /> },
-          { main: 'Paylaş butonuna tıkla', sub: 'Sonra "Ana Ekrana Ekle"', icon: <Upload className="h-4 w-4" /> },
+          { main: 'Copy this link', sub: window.location.href, icon: <Copy className="h-4 w-4" /> },
+          { main: 'Open in Safari', sub: 'Open Safari and paste the link', icon: <Eye className="h-4 w-4" /> },
+          { main: 'Tap Share button', sub: 'Then "Add to Home Screen"', icon: <Upload className="h-4 w-4" /> },
         ]
       };
     }
@@ -1510,11 +1526,11 @@ function MobileLanding() {
     // Android Chrome
     if (platform === 'android' && browser === 'chrome') {
       return {
-        title: 'Chrome ile Ana Ekrana Ekle',
+        title: 'Add to Home Screen with Chrome',
         steps: [
-          { main: 'Menüyü aç', sub: 'Sağ üstteki ⋮ simgesi', icon: <MoreVertical className="h-4 w-4" /> },
-          { main: '"Ana ekrana ekle" seç', sub: 'Veya "Uygulamayı yükle"', icon: <Plus className="h-4 w-4" /> },
-          { main: '"Yükle" butonuna tıkla', sub: 'Onay kutusunda', icon: <Check className="h-4 w-4" /> },
+          { main: 'Open menu', sub: '⋮ icon at top right', icon: <MoreVertical className="h-4 w-4" /> },
+          { main: 'Select "Add to Home screen"', sub: 'Or "Install app"', icon: <Plus className="h-4 w-4" /> },
+          { main: 'Tap "Install"', sub: 'In the confirmation dialog', icon: <Check className="h-4 w-4" /> },
         ]
       };
     }
@@ -1522,11 +1538,11 @@ function MobileLanding() {
     // Android Samsung Internet
     if (platform === 'android' && browser === 'samsung') {
       return {
-        title: 'Samsung Internet ile Ekle',
+        title: 'Add with Samsung Internet',
         steps: [
-          { main: 'Menüyü aç', sub: 'Alttaki ≡ simgesi', icon: <MoreVertical className="h-4 w-4" /> },
-          { main: '"Sayfayı ekle" seç', sub: 'Menüden', icon: <Plus className="h-4 w-4" /> },
-          { main: '"Ana ekran" seç', sub: 'Açılan seçeneklerden', icon: <Check className="h-4 w-4" /> },
+          { main: 'Open menu', sub: '≡ icon at bottom', icon: <MoreVertical className="h-4 w-4" /> },
+          { main: 'Select "Add page to"', sub: 'From the menu', icon: <Plus className="h-4 w-4" /> },
+          { main: 'Choose "Home screen"', sub: 'From the options', icon: <Check className="h-4 w-4" /> },
         ]
       };
     }
@@ -1534,11 +1550,11 @@ function MobileLanding() {
     // Android Firefox
     if (platform === 'android' && browser === 'firefox') {
       return {
-        title: 'Firefox ile Ana Ekrana Ekle',
+        title: 'Add to Home Screen with Firefox',
         steps: [
-          { main: 'Menüyü aç', sub: 'Sağ üstteki ⋮ simgesi', icon: <MoreVertical className="h-4 w-4" /> },
-          { main: '"Yükle" seç', sub: 'Menüde yukarıda', icon: <Download className="h-4 w-4" /> },
-          { main: '"Ekle" butonuna tıkla', sub: 'Onay kutusunda', icon: <Check className="h-4 w-4" /> },
+          { main: 'Open menu', sub: '⋮ icon at top right', icon: <MoreVertical className="h-4 w-4" /> },
+          { main: 'Select "Install"', sub: 'Near the top of menu', icon: <Download className="h-4 w-4" /> },
+          { main: 'Tap "Add"', sub: 'In the confirmation dialog', icon: <Check className="h-4 w-4" /> },
         ]
       };
     }
@@ -1546,11 +1562,11 @@ function MobileLanding() {
     // Android Edge
     if (platform === 'android' && browser === 'edge') {
       return {
-        title: 'Edge ile Ana Ekrana Ekle',
+        title: 'Add to Home Screen with Edge',
         steps: [
-          { main: 'Menüyü aç', sub: 'Alttaki ≡ simgesi', icon: <MoreVertical className="h-4 w-4" /> },
-          { main: '"Telefona ekle" seç', sub: 'Menüden', icon: <Plus className="h-4 w-4" /> },
-          { main: '"Yükle" butonuna tıkla', sub: 'Onay kutusunda', icon: <Check className="h-4 w-4" /> },
+          { main: 'Open menu', sub: '≡ icon at bottom', icon: <MoreVertical className="h-4 w-4" /> },
+          { main: 'Select "Add to phone"', sub: 'From the menu', icon: <Plus className="h-4 w-4" /> },
+          { main: 'Tap "Install"', sub: 'In the confirmation dialog', icon: <Check className="h-4 w-4" /> },
         ]
       };
     }
@@ -1558,22 +1574,22 @@ function MobileLanding() {
     // Android Opera
     if (platform === 'android' && browser === 'opera') {
       return {
-        title: 'Opera ile Ana Ekrana Ekle',
+        title: 'Add to Home Screen with Opera',
         steps: [
-          { main: 'Menüyü aç', sub: 'Sağ üstteki ⋮ simgesi', icon: <MoreVertical className="h-4 w-4" /> },
-          { main: '"Ana ekran" seç', sub: 'Menüden', icon: <Plus className="h-4 w-4" /> },
-          { main: '"Ekle" butonuna tıkla', sub: 'Onay kutusunda', icon: <Check className="h-4 w-4" /> },
+          { main: 'Open menu', sub: '⋮ icon at top right', icon: <MoreVertical className="h-4 w-4" /> },
+          { main: 'Select "Home screen"', sub: 'From the menu', icon: <Plus className="h-4 w-4" /> },
+          { main: 'Tap "Add"', sub: 'In the confirmation dialog', icon: <Check className="h-4 w-4" /> },
         ]
       };
     }
 
-    // Diğer tüm durumlar için genel talimat
+    // Default instructions for other browsers
     return {
-      title: 'Ana Ekrana Ekle',
+      title: 'Add to Home Screen',
       steps: [
-        { main: 'Tarayıcı menüsünü aç', sub: 'Genellikle ⋮ veya ≡ simgesi', icon: <MoreVertical className="h-4 w-4" /> },
-        { main: '"Ana ekrana ekle" seç', sub: 'Veya benzer bir seçenek', icon: <Plus className="h-4 w-4" /> },
-        { main: 'Onaylayın', sub: '"Ekle" veya "Yükle" butonuna tıkla', icon: <Check className="h-4 w-4" /> },
+        { main: 'Open browser menu', sub: 'Usually ⋮ or ≡ icon', icon: <MoreVertical className="h-4 w-4" /> },
+        { main: 'Select "Add to Home screen"', sub: 'Or similar option', icon: <Plus className="h-4 w-4" /> },
+        { main: 'Confirm', sub: 'Tap "Add" or "Install"', icon: <Check className="h-4 w-4" /> },
       ]
     };
   };
@@ -1586,7 +1602,7 @@ function MobileLanding() {
       samsung: 'Samsung Internet',
       edge: 'Edge',
       opera: 'Opera',
-      other: 'Bu tarayıcı'
+      other: 'This browser'
     };
     return names[b];
   };
@@ -1608,7 +1624,7 @@ function MobileLanding() {
       <div className="pt-12 pb-6 px-6 text-center">
         <Logo size={64} className="mx-auto mb-4" />
         <h1 className="text-3xl font-bold mb-2">Avalon</h1>
-        <p className="text-muted-foreground">AI Prompt Editörü</p>
+        <p className="text-muted-foreground">AI Prompt Editor</p>
       </div>
 
       {/* iOS Non-Safari Warning Banner */}
@@ -1619,9 +1635,9 @@ function MobileLanding() {
               <Eye className="h-4 w-4 text-amber-600" />
             </div>
             <div>
-              <p className="font-medium text-amber-800 text-sm">Safari Gerekli</p>
+              <p className="font-medium text-amber-800 text-sm">Safari Required</p>
               <p className="text-xs text-amber-700 mt-1">
-                {getBrowserName(browser)} iOS'ta PWA desteklemiyor. Safari'de açın.
+                {getBrowserName(browser)} doesn&apos;t support PWA on iOS. Please open in Safari.
               </p>
               <Button
                 variant="outline"
@@ -1630,7 +1646,7 @@ function MobileLanding() {
                 onClick={handleCopyUrl}
               >
                 <Copy className="h-3 w-3 mr-1" />
-                Linki Kopyala
+                Copy Link
               </Button>
             </div>
           </div>
@@ -1645,8 +1661,8 @@ function MobileLanding() {
               <Eye className="h-5 w-5 text-violet-600" />
             </div>
             <div>
-              <p className="font-medium text-sm">Görsel Düzenleme</p>
-              <p className="text-xs text-muted-foreground">JSON'u ağaç olarak gör</p>
+              <p className="font-medium text-sm">Visual Editing</p>
+              <p className="text-xs text-muted-foreground">View JSON as a tree</p>
             </div>
           </div>
 
@@ -1655,8 +1671,8 @@ function MobileLanding() {
               <Sparkles className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
-              <p className="font-medium text-sm">AI ile Düzenleme</p>
-              <p className="text-xs text-muted-foreground">Doğal dille prompt düzenle</p>
+              <p className="font-medium text-sm">AI-Powered Editing</p>
+              <p className="text-xs text-muted-foreground">Edit prompts with natural language</p>
             </div>
           </div>
 
@@ -1665,7 +1681,7 @@ function MobileLanding() {
               <Zap className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <p className="font-medium text-sm">Çoklu AI Desteği</p>
+              <p className="font-medium text-sm">Multi-AI Support</p>
               <p className="text-xs text-muted-foreground">OpenAI, Anthropic, Google</p>
             </div>
           </div>
@@ -1676,7 +1692,7 @@ function MobileLanding() {
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t shadow-lg">
         <div className="max-w-md mx-auto">
           <p className="text-center text-sm text-muted-foreground mb-3">
-            Uygulama olarak kullanmak için ana ekrana ekle
+            Add to home screen to use as an app
           </p>
 
           {/* Native Install Button (Chrome/Edge Android) */}
@@ -1691,7 +1707,7 @@ function MobileLanding() {
               ) : (
                 <Download className="h-5 w-5" />
               )}
-              Uygulamayı Yükle
+              Install App
             </Button>
           ) : (
             <Button
@@ -1699,7 +1715,7 @@ function MobileLanding() {
               onClick={() => setShowInstructions(true)}
             >
               <Plus className="h-5 w-5" />
-              Ana Ekrana Ekle
+              Add to Home Screen
             </Button>
           )}
 
@@ -1707,14 +1723,14 @@ function MobileLanding() {
           <p className="text-xs text-center text-muted-foreground mt-2">
             {platform === 'ios' && browser === 'safari' && (
               <span className="inline-flex items-center">
-                <Upload className="h-3 w-3 mx-1" /> simgesine tıkla
+                Tap the <Upload className="h-3 w-3 mx-1" /> icon
               </span>
             )}
             {platform === 'android' && !canNativeInstall && (
-              <span>{getBrowserName(browser)} menüsünden ekleyebilirsin</span>
+              <span>Add from {getBrowserName(browser)} menu</span>
             )}
             {canNativeInstall && (
-              <span className="text-green-600">Tek tıkla yüklenebilir!</span>
+              <span className="text-green-600">One-tap install available!</span>
             )}
           </p>
         </div>
@@ -1756,7 +1772,7 @@ function MobileLanding() {
                         onClick={handleCopyUrl}
                       >
                         <Copy className="h-3 w-3 mr-1" />
-                        Kopyala
+                        Copy
                       </Button>
                     )}
                   </div>
@@ -1769,7 +1785,7 @@ function MobileLanding() {
               className="w-full mt-6"
               onClick={() => setShowInstructions(false)}
             >
-              Anladım
+              Got it
             </Button>
           </div>
         </div>

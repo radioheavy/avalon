@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Avalon - AI Prompt Editor",
-  description: "AI prompt'larını görselleştir ve düzenle. Claude CLI ile entegre çalışır.",
+  description: "The AI-powered prompt editor for creators. Visual JSON editing, prompt expansion, reverse engineering, and image generation.",
   icons: {
     icon: [
       { url: "/favicon.ico" },
@@ -53,6 +54,12 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <Script
+          defer
+          src="https://umami.oesnada.com/script.js"
+          data-website-id="94a9b7dd-bbf9-4466-aa96-6496bf9fcf83"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
