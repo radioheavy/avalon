@@ -93,22 +93,13 @@ export function ReverseEngineerPanel({ onClose }: ReverseEngineerPanelProps) {
   const [customPrompt, setCustomPrompt] = useState('');
   const [useCustomPrompt, setUseCustomPrompt] = useState(false);
 
-  // Temporary API key for reverse engineering (Claude CLI doesn't support vision)
-  const [tempApiKey, setTempApiKey] = useState('');
-  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
-
   // Get current AI provider and settings
   const currentProvider = typeof window !== 'undefined'
-    ? localStorage.getItem('avalon-ai-provider') || 'claude-cli'
-    : 'claude-cli';
-
-  // Check if we need API key (Claude CLI can't do vision)
-  const needsApiKey = currentProvider === 'claude-cli';
+    ? localStorage.getItem('avalon-ai-provider') || 'anthropic'
+    : 'anthropic';
 
   const getApiKey = () => {
     if (typeof window === 'undefined') return '';
-    // First check temp key, then session storage
-    if (tempApiKey) return tempApiKey;
     return sessionStorage.getItem('avalon-api-key') || '';
   };
 
@@ -175,11 +166,8 @@ export function ReverseEngineerPanel({ onClose }: ReverseEngineerPanelProps) {
     if (!uploadedImage || !imageMimeType) return;
 
     const apiKey = getApiKey();
-
-    // Claude CLI can't do vision - need API key
-    if (needsApiKey && !apiKey) {
-      setShowApiKeyInput(true);
-      setAnalysisError('Claude CLI gorsel analiz desteklemiyor. Anthropic API key gerekli.');
+    if (!apiKey) {
+      setAnalysisError('API key bulunamadi. Ayarlardan API key ekleyin.');
       return;
     }
 
@@ -190,7 +178,6 @@ export function ReverseEngineerPanel({ onClose }: ReverseEngineerPanelProps) {
     try {
       const base64Data = uploadedImage.split(',')[1];
       const model = getSelectedModel();
-      const provider = currentProvider === 'claude-cli' ? 'anthropic' : currentProvider;
 
       const response = await fetch('/api/image/reverse', {
         method: 'POST',
@@ -198,7 +185,7 @@ export function ReverseEngineerPanel({ onClose }: ReverseEngineerPanelProps) {
         body: JSON.stringify({
           imageBase64: base64Data,
           imageMimeType,
-          provider,
+          provider: currentProvider,
           model: model || undefined,
           apiKey: apiKey || undefined,
         }),
@@ -409,38 +396,6 @@ export function ReverseEngineerPanel({ onClose }: ReverseEngineerPanelProps) {
                 </div>
               )}
 
-              {/* API Key Input for Claude CLI mode */}
-              {showApiKeyInput && needsApiKey && (
-                <div className="mt-3 p-4 rounded-xl bg-amber-50 border border-amber-200">
-                  <p className="text-xs font-medium text-amber-700 mb-2">
-                    Anthropic API Key Girin
-                  </p>
-                  <p className="text-[10px] text-amber-600 mb-3">
-                    Claude CLI gorsel analiz desteklemiyor. API key ile devam edin.
-                  </p>
-                  <input
-                    type="password"
-                    placeholder="sk-ant-..."
-                    value={tempApiKey}
-                    onChange={(e) => setTempApiKey(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-amber-200 bg-white focus:ring-2 focus:ring-amber-300 focus:border-amber-300 outline-none mb-2"
-                  />
-                  <Button
-                    onClick={() => {
-                      if (tempApiKey) {
-                        setShowApiKeyInput(false);
-                        setAnalysisError(null);
-                        handleAnalyze();
-                      }
-                    }}
-                    disabled={!tempApiKey}
-                    size="sm"
-                    className="w-full rounded-lg bg-amber-500 hover:bg-amber-600 text-white"
-                  >
-                    Analiz Et
-                  </Button>
-                </div>
-              )}
             </div>
 
             {/* Column 2: Extracted Prompt */}

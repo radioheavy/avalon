@@ -3,10 +3,8 @@
 import { useState, useEffect } from 'react';
 import { usePromptStore } from '@/lib/store/promptStore';
 import { getValueAtPath, pathToString } from '@/lib/json/updater';
-import { useTauri } from '@/hooks/useTauri';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Card } from '@/components/ui/card';
 import {
   Sparkles,
   Send,
@@ -15,7 +13,6 @@ import {
   X,
   Lightbulb,
   Wand2,
-  Terminal,
   AlertCircle,
   Zap,
   MessageSquare,
@@ -41,8 +38,6 @@ export function AIPanel() {
     setAIError,
   } = usePromptStore();
 
-  const { isDesktopApp, isClaudeInstalled, isChecking, aiUpdateValue } = useTauri();
-
   const [input, setInput] = useState('');
   const [suggestion, setSuggestion] = useState<AISuggestion | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>('');
@@ -51,45 +46,53 @@ export function AIPanel() {
 
   // Get current AI provider
   const currentProvider = typeof window !== 'undefined'
-    ? localStorage.getItem('avalon-ai-provider') || 'claude-cli'
-    : 'claude-cli';
+    ? localStorage.getItem('avalon-ai-provider') || 'anthropic'
+    : 'anthropic';
 
   // Fetch models from API
   useEffect(() => {
     const fetchModels = async () => {
-      if (currentProvider === 'claude-cli') {
-        setModels([{ id: 'default', name: 'Varsayılan' }]);
-        setSelectedModel('default');
-        return;
-      }
-
       const apiKey = sessionStorage.getItem('avalon-api-key');
       if (!apiKey) {
         // Fallback models if no API key
-        setModels([{ id: 'default', name: 'Model seçin...' }]);
+        const fallbackModels: Record<string, { id: string; name: string }[]> = {
+          'openai': [{ id: 'gpt-4o', name: 'GPT-4o' }, { id: 'gpt-4o-mini', name: 'GPT-4o Mini' }],
+          'anthropic': [{ id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4' }],
+          'google': [{ id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' }],
+        };
+        setModels(fallbackModels[currentProvider] || []);
+        if (fallbackModels[currentProvider]?.[0]) {
+          setSelectedModel(fallbackModels[currentProvider][0].id);
+        }
         return;
       }
 
       setIsLoadingModels(true);
       try {
-        if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
-          const { invoke } = await import('@tauri-apps/api/core');
-          const fetchedModels = await invoke<{ id: string; name: string }[]>('get_models', {
+        const response = await fetch('/api/models', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             provider: currentProvider,
             apiKey: apiKey
-          });
+          }),
+        });
 
+        if (response.ok) {
+          const fetchedModels = await response.json();
           if (fetchedModels && fetchedModels.length > 0) {
             setModels(fetchedModels);
             // Restore saved model or use first
             const savedModel = sessionStorage.getItem('avalon-ai-model');
-            if (savedModel && fetchedModels.some(m => m.id === savedModel)) {
+            if (savedModel && fetchedModels.some((m: { id: string }) => m.id === savedModel)) {
               setSelectedModel(savedModel);
             } else {
               setSelectedModel(fetchedModels[0].id);
               sessionStorage.setItem('avalon-ai-model', fetchedModels[0].id);
             }
           }
+        } else {
+          throw new Error('Failed to fetch models');
         }
       } catch {
         // Fallback to basic models on error
@@ -117,7 +120,6 @@ export function AIPanel() {
   };
 
   const providerNames: Record<string, string> = {
-    'claude-cli': 'Claude CLI',
     'openai': 'OpenAI',
     'anthropic': 'Anthropic',
     'google': 'Gemini'
@@ -134,55 +136,6 @@ export function AIPanel() {
     return sessionStorage.getItem('avalon-api-key') || '';
   };
 
-  // Web API ile çağrı - multi-provider support
-  const callWebAPI = async () => {
-    const apiKey = getApiKey();
-    const provider = currentProvider === 'claude-cli' ? 'anthropic' : currentProvider;
-
-    const response = await fetch('/api/ai/update', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userRequest: input,
-        currentPath: selectedPath,
-        currentValue: selectedValue,
-        fullPrompt: prompt?.content,
-        provider,
-        model: selectedModel || undefined,
-        apiKey: apiKey || undefined,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error('AI request failed');
-    }
-
-    return response.json();
-  };
-
-  // Tauri CLI ile çağrı
-  const callTauriCLI = async () => {
-    const response = await aiUpdateValue({
-      user_request: input,
-      current_path: selectedPath || undefined,
-      current_value: selectedValue,
-      full_prompt: prompt?.content,
-    });
-
-    if (!response.success) {
-      throw new Error(response.error || 'Claude CLI error');
-    }
-
-    // Parse the output
-    const outputText = response.output || '';
-    const jsonMatch = outputText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Could not parse Claude response');
-    }
-
-    return JSON.parse(jsonMatch[0]);
-  };
-
   const handleSubmit = async () => {
     if (!input.trim() || !prompt) return;
 
@@ -191,14 +144,27 @@ export function AIPanel() {
     setSuggestion(null);
 
     try {
-      let data;
+      const apiKey = getApiKey();
 
-      // Tauri app ise CLI kullan, değilse web API
-      if (isDesktopApp && isClaudeInstalled) {
-        data = await callTauriCLI();
-      } else {
-        data = await callWebAPI();
+      const response = await fetch('/api/ai/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userRequest: input,
+          currentPath: selectedPath,
+          currentValue: selectedValue,
+          fullPrompt: prompt?.content,
+          provider: currentProvider,
+          model: selectedModel || undefined,
+          apiKey: apiKey || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('AI request failed');
       }
+
+      const data = await response.json();
 
       if (data.success) {
         setSuggestion({
@@ -246,31 +212,29 @@ export function AIPanel() {
         </div>
 
         {/* Model Selector */}
-        {currentProvider !== 'claude-cli' && (
-          <div className="relative">
-            {isLoadingModels ? (
-              <div className="flex items-center gap-1.5 bg-neutral-100 text-neutral-500 text-xs font-medium px-3 py-1.5 rounded-lg">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Yükleniyor...
-              </div>
-            ) : (
-              <>
-                <select
-                  value={selectedModel}
-                  onChange={(e) => handleModelChange(e.target.value)}
-                  className="appearance-none bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs font-medium pl-3 pr-7 py-1.5 rounded-lg cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500/20"
-                >
-                  {models.map((model) => (
-                    <option key={model.id} value={model.id}>
-                      {model.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400 pointer-events-none" />
-              </>
-            )}
-          </div>
-        )}
+        <div className="relative">
+          {isLoadingModels ? (
+            <div className="flex items-center gap-1.5 bg-neutral-100 text-neutral-500 text-xs font-medium px-3 py-1.5 rounded-lg">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Yükleniyor...
+            </div>
+          ) : (
+            <>
+              <select
+                value={selectedModel}
+                onChange={(e) => handleModelChange(e.target.value)}
+                className="appearance-none bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs font-medium pl-3 pr-7 py-1.5 rounded-lg cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+              >
+                {models.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400 pointer-events-none" />
+            </>
+          )}
+        </div>
       </div>
 
       {/* Selected Path */}
@@ -287,26 +251,6 @@ export function AIPanel() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4">
-        {/* Desktop app but no Claude CLI */}
-        {isDesktopApp && !isClaudeInstalled && !isChecking && (
-          <div className="p-4 mb-4 rounded-2xl bg-amber-50 border border-amber-100">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-                <AlertCircle className="h-4 w-4 text-amber-600" />
-              </div>
-              <div>
-                <p className="font-medium text-sm text-neutral-800">Claude CLI bulunamadı</p>
-                <p className="text-xs text-neutral-500 mt-1">
-                  AI özelliklerini kullanmak için:
-                </p>
-                <code className="text-xs bg-white px-2.5 py-1.5 rounded-lg mt-2 block border border-amber-200 text-amber-700">
-                  npm install -g @anthropic-ai/claude-code
-                </code>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Selected value preview */}
         {selectedPath && selectedValue !== undefined && (
           <div className="mb-4">
@@ -337,7 +281,6 @@ export function AIPanel() {
                       : 'border-sky-200 bg-sky-50 text-sky-600 hover:bg-sky-100'
                   } disabled:opacity-50`}
                   onClick={() => setInput(action.label)}
-                  disabled={isDesktopApp && !isClaudeInstalled}
                 >
                   <action.icon className="h-3.5 w-3.5" />
                   {action.label}
@@ -419,8 +362,6 @@ export function AIPanel() {
             placeholder={
               !selectedPath
                 ? 'Önce bir alan seç...'
-                : isDesktopApp && !isClaudeInstalled
-                ? 'Önce Claude CLI kur...'
                 : 'Ne değiştirmek istiyorsun?'
             }
             value={input}
@@ -431,17 +372,12 @@ export function AIPanel() {
                 handleSubmit();
               }
             }}
-            disabled={!selectedPath || isAILoading || (isDesktopApp && !isClaudeInstalled)}
+            disabled={!selectedPath || isAILoading}
             className="min-h-[80px] resize-none pr-14 text-sm rounded-xl border-neutral-200 bg-white focus:border-violet-300 focus:ring-violet-100"
           />
           <button
             onClick={handleSubmit}
-            disabled={
-              !selectedPath ||
-              !input.trim() ||
-              isAILoading ||
-              (isDesktopApp && !isClaudeInstalled)
-            }
+            disabled={!selectedPath || !input.trim() || isAILoading}
             className="absolute right-3 bottom-3 h-9 w-9 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:from-violet-500 hover:to-indigo-500 transition-all shadow-lg shadow-violet-500/25"
           >
             {isAILoading ? (
@@ -452,17 +388,8 @@ export function AIPanel() {
           </button>
         </div>
         <p className="text-xs text-neutral-400 mt-2 flex items-center gap-1.5">
-          {currentProvider === 'claude-cli' ? (
-            <>
-              <Terminal className="h-3 w-3" />
-              Lokal Claude CLI
-            </>
-          ) : (
-            <>
-              <Bot className="h-3 w-3" />
-              {models.find(m => m.id === selectedModel)?.name || providerNames[currentProvider]}
-            </>
-          )}
+          <Bot className="h-3 w-3" />
+          {models.find(m => m.id === selectedModel)?.name || providerNames[currentProvider]}
         </p>
       </div>
     </div>

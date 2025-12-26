@@ -142,7 +142,7 @@ function ScreenshotShowcase() {
 }
 
 type View = 'dashboard' | 'editor';
-type AppMode = 'loading' | 'desktop' | 'web' | 'mobile-web' | 'mobile-pwa';
+type AppMode = 'loading' | 'app' | 'mobile-web' | 'mobile-pwa';
 
 // Mobil algılama
 function isMobileDevice() {
@@ -200,15 +200,13 @@ function canUseInstallPrompt(): boolean {
 export default function App() {
   const [appMode, setAppMode] = useState<AppMode>('loading');
 
-  // Tauri, mobil ve PWA kontrolü
+  // Mobil ve PWA kontrolü
   useEffect(() => {
     const checkEnvironment = async () => {
       // Kısa bir delay ile kontrol (hydration için)
       await new Promise(r => setTimeout(r, 100));
 
-      if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
-        setAppMode('desktop');
-      } else if (isMobileDevice()) {
+      if (isMobileDevice()) {
         // Mobil: PWA mı yoksa normal browser mı?
         if (isStandalone()) {
           setAppMode('mobile-pwa');
@@ -216,7 +214,7 @@ export default function App() {
           setAppMode('mobile-web');
         }
       } else {
-        setAppMode('web');
+        setAppMode('app');
       }
     };
 
@@ -245,12 +243,7 @@ export default function App() {
     return <MobileLanding />;
   }
 
-  // Web mode → Landing Page
-  if (appMode === 'web') {
-    return <LandingPage />;
-  }
-
-  // Desktop mode → Editor App
+  // App mode → Editor App
   return <EditorApp />;
 }
 
@@ -606,17 +599,20 @@ function EditorView({ prompt, onBack }: { prompt: Prompt; onBack: () => void }) 
     setRightWidth(prev => Math.max(300, Math.min(500, prev - delta)));
   };
 
-  // Get current AI provider
-  const currentProvider = localStorage.getItem('avalon-ai-provider') || 'claude-cli';
+  // Get current AI provider (safely for SSR)
+  const currentProvider = typeof window !== 'undefined'
+    ? localStorage.getItem('avalon-ai-provider') || 'anthropic'
+    : 'anthropic';
   const providerNames: Record<string, string> = {
-    'claude-cli': 'Claude CLI',
     'openai': 'OpenAI',
     'anthropic': 'Anthropic',
     'google': 'Gemini'
   };
 
-  // Get current Image Gen provider
-  const currentImageGen = localStorage.getItem('avalon-image-gen-provider') || 'none';
+  // Get current Image Gen provider (safely for SSR)
+  const currentImageGen = typeof window !== 'undefined'
+    ? localStorage.getItem('avalon-image-gen-provider') || 'none'
+    : 'none';
   const imageGenNames: Record<string, string> = {
     'fal': 'fal.ai',
     'wiro': 'Wiro.ai',
@@ -787,15 +783,14 @@ function EditorView({ prompt, onBack }: { prompt: Prompt; onBack: () => void }) 
 // ============================================
 // ONBOARDING SCREEN (İlk açılış)
 // ============================================
-type OnboardingStep = 'welcome' | 'cli-check' | 'cli-setup' | 'api-setup' | 'image-gen-select' | 'image-gen-setup' | 'ready';
-type AIProvider = 'claude-cli' | 'openai' | 'anthropic' | 'google';
+type OnboardingStep = 'welcome' | 'api-setup' | 'image-gen-select' | 'image-gen-setup' | 'ready';
+type AIProvider = 'openai' | 'anthropic' | 'google';
 type ImageGenProvider = 'fal' | 'wiro' | 'none';
 
 function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
   const [step, setStep] = useState<OnboardingStep>('welcome');
-  const [selectedProvider, setSelectedProvider] = useState<AIProvider>('claude-cli');
+  const [selectedProvider, setSelectedProvider] = useState<AIProvider>('anthropic');
   const [apiKey, setApiKey] = useState('');
-  const [isChecking, setIsChecking] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
 
@@ -807,32 +802,6 @@ function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
 
   // Mobile step state (for step-by-step flow on mobile)
   const [mobileStep, setMobileStep] = useState<'llm' | 'image-gen'>('llm');
-
-  const checkClaudeCLI = async () => {
-    setIsChecking(true);
-    setStep('cli-check');
-
-    try {
-      if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
-        const { invoke } = await import('@tauri-apps/api/core');
-        const isInstalled = await invoke('check_claude_installed');
-
-        if (isInstalled) {
-          setSelectedProvider('claude-cli');
-          // Her zaman image gen secim ekranina git
-          setStep('image-gen-select');
-        } else {
-          setStep('cli-setup');
-        }
-      } else {
-        setStep('cli-setup');
-      }
-    } catch {
-      setStep('cli-setup');
-    } finally {
-      setIsChecking(false);
-    }
-  };
 
   const handleComplete = (provider: AIProvider, key?: string) => {
     // AI ayarlarını localStorage'a kaydet (sadece provider, key session'da)
@@ -859,18 +828,16 @@ function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
     setTestResult(null);
 
     try {
-      // Tauri backend üzerinden API test et (CORS sorunu yok)
-      if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
-        const { invoke } = await import('@tauri-apps/api/core');
-        const isValid = await invoke<boolean>('test_api_key', {
+      const response = await fetch('/api/test-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           provider: selectedProvider,
           apiKey: apiKey
-        });
-        setTestResult(isValid ? 'success' : 'error');
-      } else {
-        // Web modunda (normalde olmaz ama fallback)
-        setTestResult('error');
-      }
+        }),
+      });
+      const data = await response.json();
+      setTestResult(data.valid ? 'success' : 'error');
     } catch {
       setTestResult('error');
     } finally {
@@ -879,7 +846,6 @@ function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
   };
 
   const providerInfo: Record<AIProvider, { name: string; placeholder: string; link: string }> = {
-    'claude-cli': { name: 'Claude CLI', placeholder: '', link: '' },
     'openai': {
       name: 'OpenAI',
       placeholder: 'sk-...',
@@ -977,53 +943,75 @@ function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
                 </h3>
 
                 <div className="space-y-3">
-                  {/* Claude CLI Option */}
+                  {/* Anthropic Option */}
                   <button
-                    onClick={() => setSelectedProvider('claude-cli')}
+                    onClick={() => setSelectedProvider('anthropic')}
                     className={`w-full p-4 rounded-lg border-2 transition-colors text-left ${
-                      selectedProvider === 'claude-cli'
+                      selectedProvider === 'anthropic'
                         ? 'border-violet-500 bg-violet-50'
                         : 'border-violet-200 bg-violet-50/50 hover:bg-violet-50'
                     }`}
                   >
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-10 h-10 rounded-full bg-violet-200 flex items-center justify-center">
-                        <Terminal className="h-5 w-5 text-violet-600" />
+                        <Sparkles className="h-5 w-5 text-violet-600" />
                       </div>
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">Claude CLI</h3>
-                        {selectedProvider === 'claude-cli' && <Check className="h-4 w-4 text-violet-600" />}
+                        <h3 className="font-semibold">Anthropic</h3>
+                        {selectedProvider === 'anthropic' && <Check className="h-4 w-4 text-violet-600" />}
                       </div>
                     </div>
                     <p className="text-xs text-violet-600 mb-1">Onerilen</p>
                     <p className="text-sm text-muted-foreground">
-                      Claude Max/Pro aboneligin varsa ek ucret odemeden kullan.
+                      Claude Sonnet 4, Claude Opus modelleri.
                     </p>
                   </button>
 
-                  {/* API Key Option */}
+                  {/* OpenAI Option */}
                   <button
                     onClick={() => setSelectedProvider('openai')}
                     className={`w-full p-4 rounded-lg border-2 transition-colors text-left ${
-                      selectedProvider !== 'claude-cli'
+                      selectedProvider === 'openai'
                         ? 'border-violet-500 bg-violet-50'
                         : 'border-neutral-200 hover:border-violet-300 hover:bg-muted/50'
                     }`}
                   >
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                        <svg className="h-5 w-5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                        </svg>
+                        <Zap className="h-5 w-5 text-green-600" />
                       </div>
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">API Key</h3>
-                        {selectedProvider !== 'claude-cli' && <Check className="h-4 w-4 text-violet-600" />}
+                        <h3 className="font-semibold">OpenAI</h3>
+                        {selectedProvider === 'openai' && <Check className="h-4 w-4 text-violet-600" />}
                       </div>
                     </div>
-                    <p className="text-xs text-muted-foreground mb-1">OpenAI, Anthropic, Gemini</p>
+                    <p className="text-xs text-muted-foreground mb-1">GPT-4o, GPT-4 Turbo</p>
                     <p className="text-sm text-muted-foreground">
-                      Kendi API key&apos;inle kullan.
+                      OpenAI modelleri ile kullan.
+                    </p>
+                  </button>
+
+                  {/* Google Option */}
+                  <button
+                    onClick={() => setSelectedProvider('google')}
+                    className={`w-full p-4 rounded-lg border-2 transition-colors text-left ${
+                      selectedProvider === 'google'
+                        ? 'border-violet-500 bg-violet-50'
+                        : 'border-neutral-200 hover:border-violet-300 hover:bg-muted/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                        <MessageSquare className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold">Google Gemini</h3>
+                        {selectedProvider === 'google' && <Check className="h-4 w-4 text-violet-600" />}
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-1">Gemini Pro, Gemini Flash</p>
+                    <p className="text-sm text-muted-foreground">
+                      Google AI modelleri ile kullan.
                     </p>
                   </button>
                 </div>
@@ -1133,64 +1121,11 @@ function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
               <Button
                 size="lg"
                 className="px-8"
-                onClick={() => {
-                  if (selectedProvider === 'claude-cli') {
-                    checkClaudeCLI();
-                  } else {
-                    setStep('api-setup');
-                  }
-                }}
+                onClick={() => setStep('api-setup')}
               >
                 Devam Et
                 <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
-            </div>
-          </div>
-        )}
-
-        {/* CLI Check Step */}
-        {step === 'cli-check' && (
-          <div className="text-center py-8">
-            <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-            <h2 className="text-lg font-semibold mb-2">Kontrol Ediliyor...</h2>
-            <p className="text-sm text-muted-foreground">Claude CLI aranıyor</p>
-          </div>
-        )}
-
-        {/* CLI Setup Step */}
-        {step === 'cli-setup' && (
-          <div>
-            <div className="text-center mb-6">
-              <div className="w-14 h-14 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
-                <Terminal className="h-7 w-7 text-amber-600" />
-              </div>
-              <h2 className="text-xl font-bold mb-2">Claude CLI Bulunamadı</h2>
-              <p className="text-muted-foreground text-sm">Kurulum için aşağıdaki komutu çalıştır</p>
-            </div>
-
-            <div className="bg-muted rounded-lg p-4 mb-6">
-              <code className="text-sm font-mono block">npm install -g @anthropic-ai/claude-code</code>
-            </div>
-
-            <div className="space-y-3">
-              <Button className="w-full" onClick={checkClaudeCLI}>
-                Tekrar Kontrol Et
-              </Button>
-              <Button variant="outline" className="w-full" onClick={() => {
-                setSelectedProvider('openai');
-                setStep('api-setup');
-              }}>
-                API Key ile Devam Et
-              </Button>
-              <button
-                onClick={() => {
-                  setSelectedProvider('claude-cli');
-                  setStep('image-gen-select');
-                }}
-                className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                AI olmadan devam et
-              </button>
             </div>
           </div>
         )}
@@ -1534,7 +1469,7 @@ function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-100 text-violet-700">
                 <Sparkles className="h-4 w-4" />
                 <span className="text-sm font-medium">
-                  {selectedProvider === 'claude-cli' ? 'Claude CLI' : providerInfo[selectedProvider].name}
+                  {providerInfo[selectedProvider].name}
                 </span>
               </div>
 
@@ -1550,9 +1485,7 @@ function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
             <p className="text-muted-foreground mb-6 text-sm">
               {selectedImageGen !== 'none'
                 ? 'AI ve gorsel uretim servisleri ayarlandi.'
-                : selectedProvider === 'claude-cli'
-                  ? 'Claude CLI kurulu ve calisiyor.'
-                  : `${providerInfo[selectedProvider].name} baglantisi ayarlandi.`}
+                : `${providerInfo[selectedProvider].name} baglantisi ayarlandi.`}
             </p>
 
             <Button className="w-full" size="lg" onClick={() => handleComplete(selectedProvider, apiKey)}>
@@ -2047,17 +1980,20 @@ function EditorApp() {
     setView('editor');
   };
 
-  // Get current AI provider
-  const currentProvider = localStorage.getItem('avalon-ai-provider') || 'claude-cli';
+  // Get current AI provider (safely for SSR)
+  const currentProvider = typeof window !== 'undefined'
+    ? localStorage.getItem('avalon-ai-provider') || 'anthropic'
+    : 'anthropic';
   const providerNames: Record<string, string> = {
-    'claude-cli': 'Claude CLI',
     'openai': 'OpenAI',
     'anthropic': 'Anthropic',
     'google': 'Gemini'
   };
 
-  // Get current Image Gen provider
-  const currentImageGen = localStorage.getItem('avalon-image-gen-provider') || 'none';
+  // Get current Image Gen provider (safely for SSR)
+  const currentImageGen = typeof window !== 'undefined'
+    ? localStorage.getItem('avalon-image-gen-provider') || 'none'
+    : 'none';
   const imageGenNames: Record<string, string> = {
     'fal': 'fal.ai',
     'wiro': 'Wiro.ai',
@@ -2132,24 +2068,13 @@ function EditorApp() {
                   <Plus className="h-4 w-4 mr-2" />
                   Yeni Prompt
                 </Button>
-                {currentProvider !== 'claude-cli' ? (
-                  <Button
-                    onClick={() => setShowReverseEngineer(true)}
-                    className="bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg"
-                  >
-                    <Zap className="h-4 w-4 mr-2" />
-                    Tersine Muhendislik
-                  </Button>
-                ) : (
-                  <Button
-                    disabled
-                    className="bg-neutral-300 text-neutral-500 cursor-not-allowed"
-                    title="Bu ozellik icin API key gerekli. Ayarlardan OpenAI, Anthropic veya Google secin."
-                  >
-                    <Zap className="h-4 w-4 mr-2" />
-                    Tersine Muhendislik
-                  </Button>
-                )}
+                <Button
+                  onClick={() => setShowReverseEngineer(true)}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg"
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  Tersine Muhendislik
+                </Button>
                 <Button
                   variant="outline"
                   onClick={handleCreateSample}

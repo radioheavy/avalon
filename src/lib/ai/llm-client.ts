@@ -1,7 +1,7 @@
 // Multi-provider LLM Client
 // Supports: OpenAI, Anthropic, Google Gemini
 
-export type AIProvider = 'openai' | 'anthropic' | 'google' | 'claude-cli';
+export type AIProvider = 'openai' | 'anthropic' | 'google';
 
 export interface LLMRequest {
   provider: AIProvider;
@@ -193,8 +193,6 @@ export async function callLLM(request: LLMRequest): Promise<LLMResponse> {
       return callAnthropic(request);
     case 'google':
       return callGemini(request);
-    case 'claude-cli':
-      return { success: false, error: 'Claude CLI should be called from Tauri' };
     default:
       return { success: false, error: `Unknown provider: ${request.provider}` };
   }

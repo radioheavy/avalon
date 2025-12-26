@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { usePromptStore } from '@/lib/store/promptStore';
-import { useTauri } from '@/hooks/useTauri';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -19,7 +18,6 @@ import {
   Type,
   Settings,
   AlertCircle,
-  Terminal,
   Bot,
   FileEdit,
   Trash2,
@@ -43,8 +41,6 @@ export function ImageExpanderPanel() {
     saveExpandedAsPrompt,
   } = usePromptStore();
 
-  const { isDesktopApp, isClaudeInstalled, isChecking, expandImagePrompt } = useTauri();
-
   const [input, setInput] = useState('');
   const [copied, setCopied] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -66,8 +62,8 @@ export function ImageExpanderPanel() {
 
   // Get current AI provider and settings
   const currentProvider = typeof window !== 'undefined'
-    ? localStorage.getItem('avalon-ai-provider') || 'claude-cli'
-    : 'claude-cli';
+    ? localStorage.getItem('avalon-ai-provider') || 'anthropic'
+    : 'anthropic';
 
   const getApiKey = () => {
     if (typeof window === 'undefined') return '';
@@ -137,48 +133,6 @@ export function ImageExpanderPanel() {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
-  // Web API ile çağrı - multi-provider support
-  const callWebAPI = async (prompt: string) => {
-    const apiKey = getApiKey();
-    const model = getSelectedModel();
-    const provider = currentProvider === 'claude-cli' ? 'anthropic' : currentProvider;
-
-    const response = await fetch('/api/image/expand', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prompt,
-        provider,
-        model: model || undefined,
-        apiKey: apiKey || undefined,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error('API request failed');
-    }
-
-    return response.json();
-  };
-
-  // Tauri CLI ile çağrı
-  const callTauriCLI = async (prompt: string) => {
-    const response = await expandImagePrompt(prompt);
-
-    if (!response.success) {
-      throw new Error(response.error || 'Claude CLI error');
-    }
-
-    const outputText = response.output || '';
-    const jsonMatch = outputText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Could not parse Claude response');
-    }
-
-    const parsed = JSON.parse(jsonMatch[0]);
-    return { success: true, expandedPrompt: parsed };
-  };
-
   const handleExpand = async () => {
     if (!input.trim()) return;
 
@@ -187,13 +141,25 @@ export function ImageExpanderPanel() {
     clearExpandedImagePrompt();
 
     try {
-      let data;
+      const apiKey = getApiKey();
+      const model = getSelectedModel();
 
-      if (isDesktopApp && isClaudeInstalled) {
-        data = await callTauriCLI(input);
-      } else {
-        data = await callWebAPI(input);
+      const response = await fetch('/api/image/expand', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: input,
+          provider: currentProvider,
+          model: model || undefined,
+          apiKey: apiKey || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('API request failed');
       }
+
+      const data = await response.json();
 
       if (data.success && data.expandedPrompt) {
         setExpandedImagePrompt(data.expandedPrompt as ExpandedImagePrompt);
@@ -246,26 +212,6 @@ export function ImageExpanderPanel() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-3 sm:p-4">
-        {/* Desktop app but no Claude CLI */}
-        {isDesktopApp && !isClaudeInstalled && !isChecking && (
-          <div className="p-4 mb-4 rounded-2xl bg-amber-50 border border-amber-100">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-                <AlertCircle className="h-4 w-4 text-amber-600" />
-              </div>
-              <div>
-                <p className="font-medium text-sm text-neutral-800">Claude CLI bulunamadi</p>
-                <p className="text-xs text-neutral-500 mt-1">
-                  AI ozelliklerini kullanmak icin:
-                </p>
-                <code className="text-xs bg-white px-2.5 py-1.5 rounded-lg mt-2 block border border-amber-200 text-amber-700">
-                  npm install -g @anthropic-ai/claude-code
-                </code>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Input Section */}
         <div className="mb-4">
           <p className="text-xs font-medium text-neutral-500 mb-2 uppercase tracking-wide">
@@ -281,12 +227,12 @@ export function ImageExpanderPanel() {
                 handleExpand();
               }
             }}
-            disabled={isExpandingImage || (isDesktopApp && !isClaudeInstalled)}
+            disabled={isExpandingImage}
             className="min-h-[100px] resize-none text-sm rounded-xl border-neutral-200 bg-neutral-50 focus:bg-white focus:border-pink-300 focus:ring-pink-100"
           />
           <Button
             onClick={handleExpand}
-            disabled={!input.trim() || isExpandingImage || (isDesktopApp && !isClaudeInstalled)}
+            disabled={!input.trim() || isExpandingImage}
             className="w-full mt-3 rounded-xl bg-gradient-to-r from-pink-500 to-orange-400 hover:from-pink-600 hover:to-orange-500 text-white shadow-lg shadow-pink-500/25"
           >
             {isExpandingImage ? (
@@ -857,17 +803,8 @@ export function ImageExpanderPanel() {
       {/* Footer */}
       <div className="px-3 sm:px-4 py-2 border-t border-neutral-100 bg-neutral-50/50">
         <p className="text-[10px] sm:text-xs text-neutral-400 flex flex-wrap items-center gap-1 sm:gap-1.5">
-          {currentProvider === 'claude-cli' ? (
-            <>
-              <Terminal className="h-3 w-3 shrink-0" />
-              <span>Claude CLI</span>
-            </>
-          ) : (
-            <>
-              <Bot className="h-3 w-3 shrink-0" />
-              <span>{currentProvider === 'openai' ? 'OpenAI' : currentProvider === 'google' ? 'Gemini' : 'Anthropic'}</span>
-            </>
-          )}
+          <Bot className="h-3 w-3 shrink-0" />
+          <span>{currentProvider === 'openai' ? 'OpenAI' : currentProvider === 'google' ? 'Gemini' : 'Anthropic'}</span>
           <span className="text-neutral-300">•</span>
           <span>Nano Banana Pro</span>
         </p>

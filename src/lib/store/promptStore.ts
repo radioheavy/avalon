@@ -219,6 +219,22 @@ export const usePromptStore = create<PromptStore>()(
         currentPromptId: state.currentPromptId,
         expandedPaths: state.expandedPaths,
       }),
+      // SSR/Static export için güvenli storage
+      storage: {
+        getItem: (name) => {
+          if (typeof window === 'undefined') return null;
+          const item = localStorage.getItem(name);
+          return item ? JSON.parse(item) : null;
+        },
+        setItem: (name, value) => {
+          if (typeof window === 'undefined') return;
+          localStorage.setItem(name, JSON.stringify(value));
+        },
+        removeItem: (name) => {
+          if (typeof window === 'undefined') return;
+          localStorage.removeItem(name);
+        },
+      },
     }
   )
 );
