@@ -1927,32 +1927,45 @@ function EditorApp() {
 
   // DASHBOARD VIEW
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
-      {/* Header */}
-      <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b border-neutral-200/50">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <Logo size={28} />
-            <span className="font-semibold text-neutral-800">Avalon</span>
+    <div className="min-h-screen bg-[#f5f5f7]">
+      {/* Header - Premium Apple Style */}
+      <header className="sticky top-0 z-20 bg-white/70 backdrop-blur-2xl border-b border-black/5">
+        <div className="max-w-6xl mx-auto px-6 h-[52px] flex items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center gap-3">
+            <Logo size={32} className="shadow-sm" />
+            <span className="font-semibold text-[17px] text-gray-900 tracking-tight">Avalon</span>
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* AI Status Chip */}
+          {/* Right Section */}
+          <div className="flex items-center gap-3">
+            {/* Connected Services */}
+            <div className="flex items-center gap-2">
+              {/* AI Provider Badge */}
+              <button
+                onClick={() => setShowSettings(true)}
+                className="group flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100/80 hover:bg-gray-200/80 transition-all"
+              >
+                <div className="w-2 h-2 rounded-full bg-green-500 shadow-sm shadow-green-500/50" />
+                <span className="text-[13px] font-medium text-gray-700 group-hover:text-gray-900">{providerNames[currentProvider]}</span>
+              </button>
+
+              {/* Image Gen Badge */}
+              {currentImageGen !== 'none' && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100/80">
+                  <div className="w-2 h-2 rounded-full bg-violet-500 shadow-sm shadow-violet-500/50" />
+                  <span className="text-[13px] font-medium text-gray-700">{imageGenNames[currentImageGen]}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Settings Button */}
             <button
               onClick={() => setShowSettings(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 transition-colors"
+              className="w-8 h-8 rounded-full bg-gray-100/80 hover:bg-gray-200/80 flex items-center justify-center transition-colors"
             >
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span className="text-xs font-medium text-emerald-700">{providerNames[currentProvider]}</span>
+              <Settings className="h-4 w-4 text-gray-600" />
             </button>
-
-            {/* Image Gen Status Chip */}
-            {currentImageGen !== 'none' && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-pink-50">
-                <div className="w-1.5 h-1.5 rounded-full bg-pink-500" />
-                <span className="text-xs font-medium text-pink-700">{imageGenNames[currentImageGen]}</span>
-              </div>
-            )}
           </div>
         </div>
       </header>
@@ -1976,9 +1989,9 @@ function EditorApp() {
             </div>
 
             <div className="relative z-10">
-              <h1 className="text-3xl font-bold mb-2">Merhaba! 👋</h1>
+              <h1 className="text-3xl font-bold mb-2">Welcome back!</h1>
               <p className="text-white/80 mb-6 max-w-md">
-                JSON prompt'larını görsel olarak düzenle, AI ile anında optimize et.
+                Edit JSON prompts visually and optimize them with AI.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Button
@@ -1986,14 +1999,14 @@ function EditorApp() {
                   className="bg-white text-violet-600 hover:bg-white/90 shadow-lg"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Yeni Prompt
+                  New Prompt
                 </Button>
                 <Button
                   onClick={() => setShowReverseEngineer(true)}
                   className="bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg"
                 >
                   <Zap className="h-4 w-4 mr-2" />
-                  Tersine Muhendislik
+                  Reverse Engineer
                 </Button>
                 <Button
                   variant="outline"
@@ -2001,7 +2014,7 @@ function EditorApp() {
                   className="border-white/30 text-white hover:bg-white/10 bg-white/5"
                 >
                   <Sparkles className="h-4 w-4 mr-2" />
-                  Ornek Yukle
+                  Load Sample
                 </Button>
               </div>
             </div>
@@ -2019,7 +2032,7 @@ function EditorApp() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-neutral-800">{prompts.length}</p>
-                <p className="text-sm text-neutral-500">Toplam Prompt</p>
+                <p className="text-sm text-neutral-500">Total Prompts</p>
               </div>
             </div>
             <div className="h-px bg-neutral-100 my-4" />
@@ -2028,22 +2041,22 @@ function EditorApp() {
                 <Sparkles className="h-5 w-5 text-violet-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-neutral-800">AI Asistan</p>
-                <p className="text-xs text-neutral-500">Düzenlemeye hazır</p>
+                <p className="text-sm font-medium text-neutral-800">AI Assistant</p>
+                <p className="text-xs text-neutral-500">Ready to edit</p>
               </div>
             </div>
           </div>
 
           {/* Prompts Section Header */}
           <div className="col-span-12 flex items-center justify-between mt-4">
-            <h2 className="text-lg font-semibold text-neutral-800">Prompt'larım</h2>
+            <h2 className="text-lg font-semibold text-neutral-800">My Prompts</h2>
             {prompts.length > 0 && (
               <button
                 onClick={() => setShowCreate(true)}
                 className="text-sm text-violet-600 hover:text-violet-700 font-medium flex items-center gap-1"
               >
                 <Plus className="h-4 w-4" />
-                Ekle
+                Add
               </button>
             )}
           </div>
@@ -2090,7 +2103,7 @@ function EditorApp() {
                   </div>
                   <h3 className="font-semibold text-neutral-800 mb-1 truncate">{p.name}</h3>
                   <p className="text-xs text-neutral-500">
-                    {Object.keys(p.content).length} alan • {new Date(p.updatedAt).toLocaleDateString('tr-TR')}
+                    {Object.keys(p.content).length} fields • {new Date(p.updatedAt).toLocaleDateString('en-US')}
                   </p>
                 </div>
               );
@@ -2107,7 +2120,7 @@ function EditorApp() {
                 <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center mx-auto mb-2">
                   <Plus className="h-5 w-5 text-neutral-400" />
                 </div>
-                <p className="text-sm font-medium text-neutral-500">Yeni Prompt</p>
+                <p className="text-sm font-medium text-neutral-500">New Prompt</p>
               </div>
             </div>
           )}
@@ -2120,7 +2133,7 @@ function EditorApp() {
           <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setShowCreate(false)} />
           <Card className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-neutral-800">Yeni Prompt</h2>
+              <h2 className="text-xl font-bold text-neutral-800">New Prompt</h2>
               <button
                 onClick={() => setShowCreate(false)}
                 className="h-8 w-8 rounded-full flex items-center justify-center text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition-colors"
@@ -2133,9 +2146,9 @@ function EditorApp() {
 
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-neutral-700 mb-2 block">Prompt Adı</label>
+                <label className="text-sm font-medium text-neutral-700 mb-2 block">Prompt Name</label>
                 <Input
-                  placeholder="Örn: Image Generation Prompt"
+                  placeholder="e.g. Image Generation Prompt"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   className="h-12 rounded-xl border-neutral-200 focus:border-violet-500 focus:ring-violet-500/20"
@@ -2143,7 +2156,7 @@ function EditorApp() {
               </div>
               <div>
                 <label className="text-sm font-medium text-neutral-700 mb-2 block">
-                  JSON İçe Aktar <span className="text-neutral-400 font-normal">(opsiyonel)</span>
+                  Import JSON <span className="text-neutral-400 font-normal">(optional)</span>
                 </label>
                 <Textarea
                   placeholder='{"key": "value"}'
@@ -2159,14 +2172,14 @@ function EditorApp() {
                   className="flex-1 h-11 rounded-xl bg-violet-600 hover:bg-violet-700"
                   disabled={!newName.trim()}
                 >
-                  Oluştur
+                  Create
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => setShowCreate(false)}
                   className="h-11 rounded-xl"
                 >
-                  İptal
+                  Cancel
                 </Button>
               </div>
             </div>
@@ -2323,7 +2336,7 @@ function MobileApp() {
   };
 
   const createNewPrompt = () => {
-    const newId = createPrompt('Yeni Prompt', {
+    const newId = createPrompt('New Prompt', {
       prompt: '',
       settings: {}
     });
@@ -2620,7 +2633,7 @@ function MobileApp() {
         <div className="p-4">
           <Button onClick={createNewPrompt} className="w-full mb-4 gap-2">
             <Plus className="h-4 w-4" />
-            Yeni Prompt
+            New Prompt
           </Button>
 
           {prompts.length === 0 ? (
