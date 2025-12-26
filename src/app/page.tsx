@@ -923,75 +923,56 @@ function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
       <div className="max-w-[380px] w-full">
         {/* Welcome Step - Premium Apple Design */}
         {step === 'welcome' && (
-          <div className="py-6">
-            {/* Hero Card - Gradient like Dashboard */}
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 p-6 mb-6 shadow-xl">
-              {/* Decorative shapes */}
-              <div className="absolute top-4 right-4 w-20 h-20 bg-white/10 rounded-2xl rotate-12" />
-              <div className="absolute -bottom-4 -right-4 w-32 h-32 bg-white/5 rounded-full" />
-
-              {/* App Icon */}
-              <div className="relative z-10 mb-4">
-                <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                  <Logo size={40} />
-                </div>
+          <div className="text-center">
+            {/* App Icon - Hero Element */}
+            <div className="pt-8 pb-6">
+              <div className="inline-block">
+                <Logo size={96} className="shadow-2xl" />
               </div>
-
-              {/* Title */}
-              <h1 className="relative z-10 text-2xl font-bold text-white mb-2">
-                Welcome to Avalon
-              </h1>
-              <p className="relative z-10 text-white/80 text-sm leading-relaxed">
-                Edit, generate, and optimize your prompts with AI.
-              </p>
             </div>
 
-            {/* Feature Cards */}
-            <div className="space-y-3 mb-6">
-              {/* Edit Feature */}
-              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shrink-0 shadow-md shadow-blue-500/30">
-                  <Sparkles className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900">Visual Editor</p>
-                  <p className="text-sm text-gray-500">Edit JSON prompts visually</p>
-                </div>
-              </div>
+            {/* Typography */}
+            <h1 className="text-[32px] font-semibold text-gray-900 tracking-tight mb-2">
+              Avalon
+            </h1>
+            <p className="text-[17px] text-gray-500 mb-10 max-w-[280px] mx-auto leading-relaxed">
+              The AI-powered prompt editor for creators and developers.
+            </p>
 
-              {/* Generate Feature */}
-              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center shrink-0 shadow-md shadow-purple-500/30">
-                  <ImageIcon className="h-6 w-6 text-white" />
+            {/* Features - Minimal List */}
+            <div className="text-left bg-white/80 backdrop-blur-sm rounded-2xl p-5 mb-8 shadow-sm">
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
+                    <Eye className="h-4 w-4 text-white" />
+                  </div>
+                  <span className="text-[15px] text-gray-700">Visual JSON prompt editing</span>
                 </div>
-                <div>
-                  <p className="font-semibold text-gray-900">AI Generation</p>
-                  <p className="text-sm text-gray-500">Expand and enhance prompts</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-violet-500 flex items-center justify-center">
+                    <Sparkles className="h-4 w-4 text-white" />
+                  </div>
+                  <span className="text-[15px] text-gray-700">AI-powered prompt expansion</span>
                 </div>
-              </div>
-
-              {/* Reverse Feature */}
-              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center shrink-0 shadow-md shadow-pink-500/30">
-                  <Wand2 className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900">Reverse Engineer</p>
-                  <p className="text-sm text-gray-500">Extract prompts from images</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-pink-500 flex items-center justify-center">
+                    <RotateCcw className="h-4 w-4 text-white" />
+                  </div>
+                  <span className="text-[15px] text-gray-700">Reverse engineer from images</span>
                 </div>
               </div>
             </div>
 
-            {/* Action Button */}
+            {/* CTA Button */}
             <button
               onClick={() => setStep('api-setup')}
-              className="w-full h-[54px] bg-gray-900 hover:bg-gray-800 active:bg-black text-white text-[17px] font-semibold rounded-2xl transition-colors shadow-lg"
+              className="w-full h-[50px] bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white text-[17px] font-semibold rounded-xl transition-colors"
             >
               Get Started
             </button>
 
-            {/* Privacy */}
-            <p className="text-[13px] text-gray-400 mt-4 text-center">
+            {/* Privacy Note */}
+            <p className="text-[13px] text-gray-400 mt-4">
               Your data stays on your device
             </p>
           </div>
