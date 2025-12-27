@@ -471,6 +471,10 @@ function EditorView({ prompt, onBack }: { prompt: Prompt; onBack: () => void }) 
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'tree' | 'json'>('tree');
 
+  // Mobile & Tablet responsive states
+  const [mobileTab, setMobileTab] = useState<'tree' | 'preview' | 'ai'>('tree');
+  const [tabletLeftTab, setTabletLeftTab] = useState<'tree' | 'preview'>('tree');
+
   const handleCopy = () => {
     navigator.clipboard.writeText(JSON.stringify(prompt.content, null, 2));
     setCopied(true);
@@ -507,29 +511,29 @@ function EditorView({ prompt, onBack }: { prompt: Prompt; onBack: () => void }) 
 
   return (
     <div className="h-screen flex flex-col bg-[#FAFAFA]">
-      {/* Header */}
-      <header className="h-14 bg-white border-b border-neutral-200/80 flex items-center px-4 gap-4 shrink-0">
+      {/* Header - Responsive */}
+      <header className="h-14 bg-white border-b border-neutral-200/80 flex items-center px-3 md:px-4 gap-2 md:gap-4 shrink-0">
         {/* Left - Back & Title */}
-        <div className="flex items-center gap-3 flex-1">
+        <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
           <button
             onClick={onBack}
-            className="h-9 w-9 rounded-xl bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center transition-colors"
+            className="h-9 w-9 rounded-xl bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center transition-colors shrink-0"
           >
             <ChevronLeft className="h-5 w-5 text-neutral-600" />
           </button>
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center">
-              <FileJson className="h-4 w-4 text-white" />
+          <div className="flex items-center gap-2 md:gap-2.5 min-w-0">
+            <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center shrink-0">
+              <FileJson className="h-3.5 w-3.5 md:h-4 md:w-4 text-white" />
             </div>
-            <div>
-              <h1 className="font-semibold text-neutral-800 text-sm">{prompt.name}</h1>
-              <p className="text-[10px] text-neutral-400">{Object.keys(prompt.content).length} alan</p>
+            <div className="min-w-0">
+              <h1 className="font-semibold text-neutral-800 text-xs md:text-sm truncate">{prompt.name}</h1>
+              <p className="text-[10px] text-neutral-400 hidden sm:block">{Object.keys(prompt.content).length} alan</p>
             </div>
           </div>
         </div>
 
-        {/* Center - Tabs */}
-        <div className="flex items-center bg-neutral-100 rounded-xl p-1">
+        {/* Center - Tabs (Desktop only) */}
+        <div className="hidden lg:flex items-center bg-neutral-100 rounded-xl p-1">
           <button
             onClick={() => setActiveTab('tree')}
             className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
@@ -553,10 +557,11 @@ function EditorView({ prompt, onBack }: { prompt: Prompt; onBack: () => void }) 
         </div>
 
         {/* Right - Actions */}
-        <div className="flex items-center gap-2 flex-1 justify-end">
+        <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+          {/* Copy Button - Icon only on mobile */}
           <button
             onClick={handleCopy}
-            className={`h-9 px-4 rounded-xl text-sm font-medium flex items-center gap-2 transition-all ${
+            className={`h-9 w-9 md:w-auto md:px-4 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all ${
               copied
                 ? 'bg-emerald-100 text-emerald-700'
                 : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-600'
@@ -565,24 +570,24 @@ function EditorView({ prompt, onBack }: { prompt: Prompt; onBack: () => void }) 
             {copied ? (
               <>
                 <Check className="h-4 w-4" />
-                Kopyalandı
+                <span className="hidden md:inline">Kopyalandı</span>
               </>
             ) : (
               <>
                 <Copy className="h-4 w-4" />
-                Kopyala
+                <span className="hidden md:inline">Kopyala</span>
               </>
             )}
           </button>
-          {/* AI Provider Badge */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50">
+          {/* AI Provider Badge - Hidden on mobile */}
+          <div className="hidden sm:flex items-center gap-1.5 px-2 md:px-3 py-1.5 rounded-xl bg-emerald-50">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             <span className="text-xs font-medium text-emerald-700">{providerNames[currentProvider]}</span>
           </div>
 
-          {/* Image Gen Provider Badge */}
+          {/* Image Gen Provider Badge - Hidden on mobile */}
           {currentImageGen !== 'none' && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-pink-50">
+            <div className="hidden md:flex items-center gap-1.5 px-2 md:px-3 py-1.5 rounded-xl bg-pink-50">
               <div className="w-1.5 h-1.5 rounded-full bg-pink-500" />
               <span className="text-xs font-medium text-pink-700">{imageGenNames[currentImageGen]}</span>
             </div>
@@ -590,7 +595,185 @@ function EditorView({ prompt, onBack }: { prompt: Prompt; onBack: () => void }) 
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
+      {/* ============================================ */}
+      {/* MOBILE LAYOUT (< 768px) - Tab-based */}
+      {/* ============================================ */}
+      <div className="flex-1 flex flex-col overflow-hidden md:hidden">
+        {/* Mobile Tab Bar */}
+        <div className="flex bg-white border-b border-neutral-200/80 shrink-0">
+          <button
+            onClick={() => setMobileTab('tree')}
+            className={`flex-1 py-3 text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
+              mobileTab === 'tree'
+                ? 'text-violet-600 border-b-2 border-violet-600 bg-violet-50/50'
+                : 'text-neutral-500'
+            }`}
+          >
+            <FileJson className="h-4 w-4" />
+            Ağaç
+          </button>
+          <button
+            onClick={() => setMobileTab('preview')}
+            className={`flex-1 py-3 text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
+              mobileTab === 'preview'
+                ? 'text-violet-600 border-b-2 border-violet-600 bg-violet-50/50'
+                : 'text-neutral-500'
+            }`}
+          >
+            <Eye className="h-4 w-4" />
+            Önizleme
+          </button>
+          <button
+            onClick={() => setMobileTab('ai')}
+            className={`flex-1 py-3 text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
+              mobileTab === 'ai'
+                ? 'text-violet-600 border-b-2 border-violet-600 bg-violet-50/50'
+                : 'text-neutral-500'
+            }`}
+          >
+            <Sparkles className="h-4 w-4" />
+            AI
+          </button>
+        </div>
+
+        {/* Mobile Content */}
+        <div className="flex-1 overflow-hidden">
+          {mobileTab === 'tree' && (
+            <div className="h-full bg-white">
+              <PromptTree />
+            </div>
+          )}
+          {mobileTab === 'preview' && (
+            <div className="h-full overflow-y-auto p-4 bg-[#FAFAFA]">
+              <div className="bg-white rounded-2xl border border-neutral-200/80 shadow-sm overflow-hidden">
+                <div className="px-4 py-3 border-b border-neutral-100 bg-neutral-50/50">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                    <span className="ml-2 text-xs text-neutral-400 font-mono">prompt.json</span>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <pre className="text-xs font-mono text-neutral-600 whitespace-pre-wrap leading-relaxed">
+                    {JSON.stringify(prompt.content, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          )}
+          {mobileTab === 'ai' && (
+            <div className="h-full bg-white">
+              <Tabs defaultValue="ai" className="flex flex-col h-full">
+                <TabsList className="grid w-full grid-cols-2 h-10 p-1 bg-neutral-100/80 border-b border-neutral-200/50 rounded-none shrink-0">
+                  <TabsTrigger value="ai" className="text-xs font-medium rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    AI Asistan
+                  </TabsTrigger>
+                  <TabsTrigger value="image" className="text-xs font-medium rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center gap-1.5">
+                    <ImageIcon className="h-3.5 w-3.5" />
+                    Image
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="ai" className="flex-1 overflow-hidden m-0">
+                  <AIPanel />
+                </TabsContent>
+                <TabsContent value="image" className="flex-1 overflow-hidden m-0">
+                  <ImageExpanderPanel />
+                </TabsContent>
+              </Tabs>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ============================================ */}
+      {/* TABLET LAYOUT (768px - 1024px) - 2-Panel */}
+      {/* ============================================ */}
+      <div className="hidden md:flex lg:hidden flex-1 overflow-hidden">
+        {/* Left Panel - Tree/Preview Tabs */}
+        <div className="flex-1 flex flex-col overflow-hidden bg-white border-r border-neutral-200/80">
+          {/* Tablet Left Tab Bar */}
+          <div className="flex bg-neutral-50 border-b border-neutral-200/80 shrink-0">
+            <button
+              onClick={() => setTabletLeftTab('tree')}
+              className={`flex-1 py-2.5 text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
+                tabletLeftTab === 'tree'
+                  ? 'text-violet-600 bg-white border-b-2 border-violet-600'
+                  : 'text-neutral-500 hover:text-neutral-700'
+              }`}
+            >
+              <FileJson className="h-4 w-4" />
+              Ağaç
+            </button>
+            <button
+              onClick={() => setTabletLeftTab('preview')}
+              className={`flex-1 py-2.5 text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
+                tabletLeftTab === 'preview'
+                  ? 'text-violet-600 bg-white border-b-2 border-violet-600'
+                  : 'text-neutral-500 hover:text-neutral-700'
+              }`}
+            >
+              <Eye className="h-4 w-4" />
+              Önizleme
+            </button>
+          </div>
+
+          {/* Tablet Left Content */}
+          <div className="flex-1 overflow-hidden">
+            {tabletLeftTab === 'tree' ? (
+              <div className="h-full overflow-y-auto">
+                <PromptTree />
+              </div>
+            ) : (
+              <div className="h-full overflow-y-auto p-4 bg-[#FAFAFA]">
+                <div className="bg-white rounded-2xl border border-neutral-200/80 shadow-sm overflow-hidden">
+                  <div className="px-4 py-3 border-b border-neutral-100 bg-neutral-50/50">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                      <span className="ml-2 text-xs text-neutral-400 font-mono">prompt.json</span>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <pre className="text-sm font-mono text-neutral-600 whitespace-pre-wrap leading-relaxed">
+                      {JSON.stringify(prompt.content, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Panel - AI Panel with Tabs (Fixed 320px) */}
+        <div className="w-[320px] flex flex-col overflow-hidden shrink-0 bg-white border-l border-neutral-200/80">
+          <Tabs defaultValue="ai" className="flex flex-col h-full">
+            <TabsList className="grid w-full grid-cols-2 h-10 p-1 bg-neutral-100/80 border-b border-neutral-200/50 rounded-none shrink-0">
+              <TabsTrigger value="ai" className="text-xs font-medium rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5" />
+                AI
+              </TabsTrigger>
+              <TabsTrigger value="image" className="text-xs font-medium rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm flex items-center gap-1.5">
+                <ImageIcon className="h-3.5 w-3.5" />
+                Image
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="ai" className="flex-1 overflow-hidden m-0">
+              <AIPanel />
+            </TabsContent>
+            <TabsContent value="image" className="flex-1 overflow-hidden m-0">
+              <ImageExpanderPanel />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+
+      {/* ============================================ */}
+      {/* DESKTOP LAYOUT (> 1024px) - 3-Panel Resizable */}
+      {/* ============================================ */}
+      <div className="hidden lg:flex flex-1 overflow-hidden">
         {/* Sol - Tree View */}
         <div style={{ width: leftWidth }} className="flex flex-col overflow-hidden shrink-0 bg-white border-r border-neutral-200/80">
           {/* Tree Content */}
