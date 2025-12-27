@@ -952,9 +952,9 @@ function OnboardingScreen({ onComplete }: { onComplete: () => void }) {
     },
     'wiro': {
       name: 'Wiro.ai',
-      placeholder: 'wiro_...',
-      link: 'https://wiro.ai/dashboard',
-      description: 'Nano Banana Pro and other models'
+      placeholder: 'API Key (API Key Only modu)',
+      link: 'https://wiro.ai/apps',
+      description: 'Nano Banana Pro - Proje olustur, API Key Only sec'
     },
   };
 

@@ -27,7 +27,8 @@ import {
   Play,
 } from 'lucide-react';
 import { ExpandedImagePrompt } from '@/types/image-generation';
-import { FAL_POPULAR_MODELS, FAL_IMAGE_SIZES, generateImage, FalModel } from '@/lib/ai/fal-client';
+import { FAL_POPULAR_MODELS, FAL_IMAGE_SIZES, generateImage } from '@/lib/ai/fal-client';
+import { WIRO_POPULAR_MODELS, WIRO_ASPECT_RATIOS, generateWiroImage } from '@/lib/ai/wiro-client';
 
 export function ImageExpanderPanel() {
   const {
@@ -51,8 +52,10 @@ export function ImageExpanderPanel() {
   });
 
   // Image Generation states
-  const [selectedModel, setSelectedModel] = useState<string>('fal-ai/nano-banana-pro');
+  const [selectedFalModel, setSelectedFalModel] = useState<string>('fal-ai/nano-banana-pro');
+  const [selectedWiroModel, setSelectedWiroModel] = useState<string>('google/nano-banana-pro');
   const [selectedSize, setSelectedSize] = useState<string>('square_hd');
+  const [selectedAspectRatio, setSelectedAspectRatio] = useState<string>('1:1');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImages, setGeneratedImages] = useState<{ url: string }[]>([]);
   const [generateError, setGenerateError] = useState<string | null>(null);
@@ -75,8 +78,8 @@ export function ImageExpanderPanel() {
     return sessionStorage.getItem('avalon-ai-model') || '';
   };
 
-  // Get fal.ai API key
-  const getFalApiKey = () => {
+  // Get image generation API key (works for both fal.ai and wiro.ai)
+  const getImageGenApiKey = () => {
     if (typeof window === 'undefined') return '';
     return sessionStorage.getItem('avalon-image-gen-api-key') || '';
   };
@@ -88,9 +91,9 @@ export function ImageExpanderPanel() {
 
   // Handle image generation
   const handleGenerate = async () => {
-    const apiKey = getFalApiKey();
+    const apiKey = getImageGenApiKey();
     if (!apiKey) {
-      setGenerateError('fal.ai API key bulunamadi. Ayarlardan ekleyin.');
+      setGenerateError(`${currentImageGen === 'wiro' ? 'Wiro.ai' : 'fal.ai'} API key bulunamadi. Ayarlardan ekleyin.`);
       return;
     }
 
@@ -108,14 +111,29 @@ export function ImageExpanderPanel() {
     setGeneratedImages([]);
 
     try {
-      const result = await generateImage({
-        apiKey,
-        model: selectedModel,
-        prompt: promptToUse,
-        negativePrompt: expandedImagePrompt?.negative_guidance,
-        imageSize: selectedSize,
-        numImages: 1,
-      });
+      let result;
+
+      if (currentImageGen === 'wiro') {
+        // Use Wiro.ai
+        result = await generateWiroImage({
+          apiKey,
+          model: selectedWiroModel,
+          prompt: promptToUse,
+          negativePrompt: expandedImagePrompt?.negative_guidance,
+          aspectRatio: selectedAspectRatio,
+          resolution: '1K',
+        });
+      } else {
+        // Use fal.ai
+        result = await generateImage({
+          apiKey,
+          model: selectedFalModel,
+          prompt: promptToUse,
+          negativePrompt: expandedImagePrompt?.negative_guidance,
+          imageSize: selectedSize,
+          numImages: 1,
+        });
+      }
 
       if (result.success && result.images) {
         setGeneratedImages(result.images);
@@ -514,33 +532,63 @@ export function ImageExpanderPanel() {
                 {/* Model Selector */}
                 <div className="mb-3">
                   <label className="text-xs font-medium text-neutral-500 mb-1.5 block">Model</label>
-                  <select
-                    value={selectedModel}
-                    onChange={(e) => setSelectedModel(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-xl border border-emerald-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
-                  >
-                    {FAL_POPULAR_MODELS.map((model) => (
-                      <option key={model.id} value={model.id}>
-                        {model.name}
-                      </option>
-                    ))}
-                  </select>
+                  {currentImageGen === 'wiro' ? (
+                    <select
+                      value={selectedWiroModel}
+                      onChange={(e) => setSelectedWiroModel(e.target.value)}
+                      className="w-full px-3 py-2 text-sm rounded-xl border border-emerald-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
+                    >
+                      {WIRO_POPULAR_MODELS.map((model) => (
+                        <option key={model.id} value={model.id}>
+                          {model.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <select
+                      value={selectedFalModel}
+                      onChange={(e) => setSelectedFalModel(e.target.value)}
+                      className="w-full px-3 py-2 text-sm rounded-xl border border-emerald-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
+                    >
+                      {FAL_POPULAR_MODELS.map((model) => (
+                        <option key={model.id} value={model.id}>
+                          {model.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
-                {/* Size Selector */}
+                {/* Size/Aspect Ratio Selector */}
                 <div className="mb-3">
-                  <label className="text-xs font-medium text-neutral-500 mb-1.5 block">Size</label>
-                  <select
-                    value={selectedSize}
-                    onChange={(e) => setSelectedSize(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-xl border border-emerald-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
-                  >
-                    {FAL_IMAGE_SIZES.map((size) => (
-                      <option key={size.value} value={size.value}>
-                        {size.label}
-                      </option>
-                    ))}
-                  </select>
+                  <label className="text-xs font-medium text-neutral-500 mb-1.5 block">
+                    {currentImageGen === 'wiro' ? 'Aspect Ratio' : 'Size'}
+                  </label>
+                  {currentImageGen === 'wiro' ? (
+                    <select
+                      value={selectedAspectRatio}
+                      onChange={(e) => setSelectedAspectRatio(e.target.value)}
+                      className="w-full px-3 py-2 text-sm rounded-xl border border-emerald-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
+                    >
+                      {WIRO_ASPECT_RATIOS.map((ratio) => (
+                        <option key={ratio.value} value={ratio.value}>
+                          {ratio.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <select
+                      value={selectedSize}
+                      onChange={(e) => setSelectedSize(e.target.value)}
+                      className="w-full px-3 py-2 text-sm rounded-xl border border-emerald-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
+                    >
+                      {FAL_IMAGE_SIZES.map((size) => (
+                        <option key={size.value} value={size.value}>
+                          {size.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 {/* Prompt Source Toggle */}
@@ -690,33 +738,63 @@ export function ImageExpanderPanel() {
                 {/* Model Selector */}
                 <div className="mb-3">
                   <label className="text-xs font-medium text-neutral-500 mb-1.5 block">Model</label>
-                  <select
-                    value={selectedModel}
-                    onChange={(e) => setSelectedModel(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-xl border border-emerald-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
-                  >
-                    {FAL_POPULAR_MODELS.map((model) => (
-                      <option key={model.id} value={model.id}>
-                        {model.name}
-                      </option>
-                    ))}
-                  </select>
+                  {currentImageGen === 'wiro' ? (
+                    <select
+                      value={selectedWiroModel}
+                      onChange={(e) => setSelectedWiroModel(e.target.value)}
+                      className="w-full px-3 py-2 text-sm rounded-xl border border-emerald-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
+                    >
+                      {WIRO_POPULAR_MODELS.map((model) => (
+                        <option key={model.id} value={model.id}>
+                          {model.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <select
+                      value={selectedFalModel}
+                      onChange={(e) => setSelectedFalModel(e.target.value)}
+                      className="w-full px-3 py-2 text-sm rounded-xl border border-emerald-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
+                    >
+                      {FAL_POPULAR_MODELS.map((model) => (
+                        <option key={model.id} value={model.id}>
+                          {model.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
-                {/* Size Selector */}
+                {/* Size/Aspect Ratio Selector */}
                 <div className="mb-3">
-                  <label className="text-xs font-medium text-neutral-500 mb-1.5 block">Size</label>
-                  <select
-                    value={selectedSize}
-                    onChange={(e) => setSelectedSize(e.target.value)}
-                    className="w-full px-3 py-2 text-sm rounded-xl border border-emerald-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
-                  >
-                    {FAL_IMAGE_SIZES.map((size) => (
-                      <option key={size.value} value={size.value}>
-                        {size.label}
-                      </option>
-                    ))}
-                  </select>
+                  <label className="text-xs font-medium text-neutral-500 mb-1.5 block">
+                    {currentImageGen === 'wiro' ? 'Aspect Ratio' : 'Size'}
+                  </label>
+                  {currentImageGen === 'wiro' ? (
+                    <select
+                      value={selectedAspectRatio}
+                      onChange={(e) => setSelectedAspectRatio(e.target.value)}
+                      className="w-full px-3 py-2 text-sm rounded-xl border border-emerald-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
+                    >
+                      {WIRO_ASPECT_RATIOS.map((ratio) => (
+                        <option key={ratio.value} value={ratio.value}>
+                          {ratio.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <select
+                      value={selectedSize}
+                      onChange={(e) => setSelectedSize(e.target.value)}
+                      className="w-full px-3 py-2 text-sm rounded-xl border border-emerald-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
+                    >
+                      {FAL_IMAGE_SIZES.map((size) => (
+                        <option key={size.value} value={size.value}>
+                          {size.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 {/* Custom Prompt */}

@@ -28,6 +28,7 @@ import {
   Save,
 } from 'lucide-react';
 import { FAL_POPULAR_MODELS, FAL_IMAGE_SIZES, generateImage } from '@/lib/ai/fal-client';
+import { WIRO_POPULAR_MODELS, WIRO_ASPECT_RATIOS, generateWiroImage } from '@/lib/ai/wiro-client';
 
 interface ReversedPrompt {
   reverse_prompt: string;
@@ -85,8 +86,10 @@ export function ReverseEngineerPanel({ onClose }: ReverseEngineerPanelProps) {
   const [saved, setSaved] = useState(false);
 
   // Generation states
-  const [selectedModel, setSelectedModel] = useState<string>('fal-ai/nano-banana-pro');
+  const [selectedFalModel, setSelectedFalModel] = useState<string>('fal-ai/nano-banana-pro');
+  const [selectedWiroModel, setSelectedWiroModel] = useState<string>('google/nano-banana-pro');
   const [selectedSize, setSelectedSize] = useState<string>('square_hd');
+  const [selectedAspectRatio, setSelectedAspectRatio] = useState<string>('1:1');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImages, setGeneratedImages] = useState<{ url: string }[]>([]);
   const [generateError, setGenerateError] = useState<string | null>(null);
@@ -108,7 +111,7 @@ export function ReverseEngineerPanel({ onClose }: ReverseEngineerPanelProps) {
     return sessionStorage.getItem('avalon-ai-model') || '';
   };
 
-  const getFalApiKey = () => {
+  const getImageGenApiKey = () => {
     if (typeof window === 'undefined') return '';
     return sessionStorage.getItem('avalon-image-gen-api-key') || '';
   };
@@ -208,9 +211,9 @@ export function ReverseEngineerPanel({ onClose }: ReverseEngineerPanelProps) {
 
   // Generate image
   const handleGenerate = async () => {
-    const apiKey = getFalApiKey();
+    const apiKey = getImageGenApiKey();
     if (!apiKey) {
-      setGenerateError('fal.ai API key bulunamadi. Ayarlardan ekleyin.');
+      setGenerateError(`${currentImageGen === 'wiro' ? 'Wiro.ai' : 'fal.ai'} API key bulunamadi. Ayarlardan ekleyin.`);
       return;
     }
 
@@ -226,14 +229,29 @@ export function ReverseEngineerPanel({ onClose }: ReverseEngineerPanelProps) {
     setGeneratedImages([]);
 
     try {
-      const result = await generateImage({
-        apiKey,
-        model: selectedModel,
-        prompt: promptToUse,
-        negativePrompt: reversedPrompt?.negative_guidance,
-        imageSize: selectedSize,
-        numImages: 1,
-      });
+      let result;
+
+      if (currentImageGen === 'wiro') {
+        // Use Wiro.ai
+        result = await generateWiroImage({
+          apiKey,
+          model: selectedWiroModel,
+          prompt: promptToUse,
+          negativePrompt: reversedPrompt?.negative_guidance,
+          aspectRatio: selectedAspectRatio,
+          resolution: '1K',
+        });
+      } else {
+        // Use fal.ai
+        result = await generateImage({
+          apiKey,
+          model: selectedFalModel,
+          prompt: promptToUse,
+          negativePrompt: reversedPrompt?.negative_guidance,
+          imageSize: selectedSize,
+          numImages: 1,
+        });
+      }
 
       if (result.success && result.images) {
         setGeneratedImages(result.images);
@@ -591,9 +609,9 @@ export function ReverseEngineerPanel({ onClose }: ReverseEngineerPanelProps) {
                   <div className="w-14 h-14 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-3">
                     <Settings className="h-6 w-6 text-neutral-400" />
                   </div>
-                  <p className="text-sm text-neutral-600 font-medium mb-1">Gorsel Uretim Kapalı</p>
+                  <p className="text-sm text-neutral-600 font-medium mb-1">Gorsel Uretim Kapali</p>
                   <p className="text-xs text-neutral-500">
-                    Ayarlardan fal.ai yapilandirin
+                    Ayarlardan fal.ai veya Wiro.ai yapilandirin
                   </p>
                 </div>
               ) : !reversedPrompt ? (
@@ -607,36 +625,73 @@ export function ReverseEngineerPanel({ onClose }: ReverseEngineerPanelProps) {
                 </div>
               ) : (
                 <div className="space-y-3">
+                  {/* Provider Badge */}
+                  <div className="flex items-center justify-end">
+                    <span className="text-xs text-emerald-600 font-medium px-2 py-0.5 rounded-full bg-emerald-100">
+                      {currentImageGen === 'fal' ? 'fal.ai' : 'wiro.ai'}
+                    </span>
+                  </div>
+
                   {/* Model Selection */}
                   <div>
                     <label className="text-xs font-medium text-neutral-500 mb-1.5 block">Model</label>
-                    <select
-                      value={selectedModel}
-                      onChange={(e) => setSelectedModel(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-xl border border-neutral-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
-                    >
-                      {FAL_POPULAR_MODELS.map((model) => (
-                        <option key={model.id} value={model.id}>
-                          {model.name}
-                        </option>
-                      ))}
-                    </select>
+                    {currentImageGen === 'wiro' ? (
+                      <select
+                        value={selectedWiroModel}
+                        onChange={(e) => setSelectedWiroModel(e.target.value)}
+                        className="w-full px-3 py-2 text-sm rounded-xl border border-neutral-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
+                      >
+                        {WIRO_POPULAR_MODELS.map((model) => (
+                          <option key={model.id} value={model.id}>
+                            {model.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <select
+                        value={selectedFalModel}
+                        onChange={(e) => setSelectedFalModel(e.target.value)}
+                        className="w-full px-3 py-2 text-sm rounded-xl border border-neutral-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
+                      >
+                        {FAL_POPULAR_MODELS.map((model) => (
+                          <option key={model.id} value={model.id}>
+                            {model.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
 
-                  {/* Size Selection */}
+                  {/* Size/Aspect Ratio Selection */}
                   <div>
-                    <label className="text-xs font-medium text-neutral-500 mb-1.5 block">Boyut</label>
-                    <select
-                      value={selectedSize}
-                      onChange={(e) => setSelectedSize(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-xl border border-neutral-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
-                    >
-                      {FAL_IMAGE_SIZES.map((size) => (
-                        <option key={size.value} value={size.value}>
-                          {size.label}
-                        </option>
-                      ))}
-                    </select>
+                    <label className="text-xs font-medium text-neutral-500 mb-1.5 block">
+                      {currentImageGen === 'wiro' ? 'Oran' : 'Boyut'}
+                    </label>
+                    {currentImageGen === 'wiro' ? (
+                      <select
+                        value={selectedAspectRatio}
+                        onChange={(e) => setSelectedAspectRatio(e.target.value)}
+                        className="w-full px-3 py-2 text-sm rounded-xl border border-neutral-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
+                      >
+                        {WIRO_ASPECT_RATIOS.map((ratio) => (
+                          <option key={ratio.value} value={ratio.value}>
+                            {ratio.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <select
+                        value={selectedSize}
+                        onChange={(e) => setSelectedSize(e.target.value)}
+                        className="w-full px-3 py-2 text-sm rounded-xl border border-neutral-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
+                      >
+                        {FAL_IMAGE_SIZES.map((size) => (
+                          <option key={size.value} value={size.value}>
+                            {size.label}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
 
                   {/* Prompt Source Toggle */}
