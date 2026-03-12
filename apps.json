@@ -1,0 +1,73 @@
+{
+  "$schema": "https://wvw.dev/apps.schema.json",
+  "store": {
+    "name": "radioheavy Apps",
+    "developer": "radioheavy",
+    "tagline": "Privacy-first AI tools for creators and developers",
+    "github": "https://github.com/radioheavy"
+  },
+  "categories": [
+    {
+      "id": "web",
+      "name": "Web Apps"
+    },
+    {
+      "id": "developer-tools",
+      "name": "Developer Tools"
+    },
+    {
+      "id": "productivity",
+      "name": "Productivity"
+    },
+    {
+      "id": "graphics-design",
+      "name": "Graphics & Design"
+    }
+  ],
+  "apps": [
+    {
+      "id": "radioheavy-avalon",
+      "name": "Avalon",
+      "developer": "radioheavy",
+      "subtitle": "Visual prompt IDE for AI editing, reverse engineering, and image workflows",
+      "description": "Edit structured prompts, import community examples, reverse engineer images, and generate visuals from one privacy-first workspace.",
+      "longDescription": "Avalon is a privacy-first visual prompt IDE for image generation and other AI workflows. Build and manage prompts as structured JSON in a tree editor, ask an AI assistant to rewrite only the field you are focused on, expand rough ideas into production-ready prompt structures, reverse engineer uploaded images into reusable prompts, browse prompts.chat and import community examples, then generate images with fal.ai or Wiro.ai. Prompts persist locally, API keys stay in sessionStorage, and the app can be installed as a PWA for a more native feel.",
+      "icon": "https://raw.githubusercontent.com/radioheavy/avalon/main/public/apple-touch-icon.png",
+      "iconEmoji": "✨",
+      "iconStyle": {
+        "scale": 1.2,
+        "objectFit": "cover",
+        "borderRadius": "22%"
+      },
+      "category": [
+        "web",
+        "developer-tools",
+        "productivity",
+        "graphics-design"
+      ],
+      "platform": "Web",
+      "price": "Free",
+      "github": "https://github.com/radioheavy/avalon",
+      "homepage": "https://avalon.oesnada.com",
+      "language": "TypeScript",
+      "requirements": "Modern browser; your own OpenAI, Anthropic, or Google API key for AI features. Optional fal.ai or Wiro.ai API key for image generation.",
+      "features": [
+        "Visual tree editor for nested JSON prompt editing",
+        "Natural-language AI assistant that rewrites only the selected field",
+        "Prompt expander that returns scene, style, subjects, palette, composition, and negative guidance",
+        "Reverse engineer uploaded images into reusable prompts with confidence and model hints",
+        "Browse prompts.chat and import community prompts into your local prompt library",
+        "Generate images with fal.ai or Wiro.ai using model and size or aspect controls",
+        "Local-first prompt storage with session-only API key handling",
+        "Installable PWA with responsive dashboard and editor layouts"
+      ],
+      "screenshots": [
+        "https://raw.githubusercontent.com/radioheavy/avalon/main/public/a/new-2-dashboard.png",
+        "https://raw.githubusercontent.com/radioheavy/avalon/main/public/a/new-3-editor.png",
+        "https://raw.githubusercontent.com/radioheavy/avalon/main/public/a/new-4-expander.png",
+        "https://raw.githubusercontent.com/radioheavy/avalon/main/public/a/new-6-reverse-result.png",
+        "https://raw.githubusercontent.com/radioheavy/avalon/main/public/a/new-7-dashboard-prompts.png"
+      ]
+    }
+  ]
+}
