@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { usePromptStore } from '@/lib/store/promptStore';
 import { JsonObject } from '@/types/prompt';
 import { Button } from '@/components/ui/button';
+import { ModalShell } from '@/components/ui/modal-shell';
 import { Textarea } from '@/components/ui/textarea';
 import {
   ImageIcon,
@@ -23,7 +24,6 @@ import {
   Download,
   ExternalLink,
   Wand2,
-  Zap,
   Eye,
   Save,
 } from 'lucide-react';
@@ -331,40 +331,24 @@ export function ReverseEngineerPanel({ onClose }: ReverseEngineerPanelProps) {
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-
-      {/* Modal */}
-      <div className="relative w-full max-w-6xl max-h-[90vh] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="h-14 px-6 border-b border-neutral-100 flex items-center justify-between shrink-0 bg-gradient-to-r from-violet-50 to-purple-50">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-              <Zap className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h2 className="font-bold text-neutral-800">Tersine Muhendislik</h2>
-              <p className="text-xs text-neutral-500">Gorselden prompt cikar, yeniden uret</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="h-8 w-8 rounded-full flex items-center justify-center text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition-colors"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
+    <ModalShell
+      onClose={onClose}
+      eyebrow="Visual workflow"
+      title="Reverse engineer an image"
+      description="Extract its visual logic, keep the structure editable, then generate a new version."
+      symbol="reverse"
+      maxWidthClassName="max-w-6xl"
+      bodyClassName="flex flex-1 flex-col overflow-hidden p-0 lg:flex-row"
+    >
         {/* Content - 3 Column Layout */}
-        <div className="flex-1 min-h-0 overflow-hidden flex flex-col lg:flex-row">
+        <div className="contents">
           {/* Column 1: Image Upload */}
-          <div className="p-4 lg:w-1/3 lg:overflow-y-auto lg:border-r border-neutral-100 shrink-0 lg:shrink">
+          <div className="shrink-0 p-5 sm:p-6 lg:w-1/3 lg:shrink lg:overflow-y-auto lg:border-r lg:border-zinc-200/80">
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-6 h-6 rounded-lg bg-violet-100 flex items-center justify-center">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-violet-200 bg-white shadow-sm">
                   <Upload className="h-3.5 w-3.5 text-violet-600" />
                 </div>
-                <span className="text-sm font-semibold text-neutral-800">1. Gorsel Yukle</span>
+                <span className="text-sm font-semibold text-zinc-900">01 · Görsel yükle</span>
               </div>
 
               {!uploadedImage ? (
@@ -415,7 +399,7 @@ export function ReverseEngineerPanel({ onClose }: ReverseEngineerPanelProps) {
                   <Button
                     onClick={handleAnalyze}
                     disabled={isAnalyzing}
-                    className="w-full rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white shadow-lg shadow-violet-500/25"
+                  className="w-full rounded-full bg-zinc-950 text-white shadow-sm hover:bg-zinc-800"
                   >
                     {isAnalyzing ? (
                       <>
@@ -444,12 +428,12 @@ export function ReverseEngineerPanel({ onClose }: ReverseEngineerPanelProps) {
             </div>
 
             {/* Column 2: Extracted Prompt */}
-          <div className="p-4 lg:w-1/3 lg:overflow-y-auto lg:border-r border-neutral-100 bg-neutral-50/50 flex-1 min-h-0">
+          <div className="min-h-0 flex-1 bg-zinc-50/60 p-5 sm:p-6 lg:w-1/3 lg:overflow-y-auto lg:border-r lg:border-zinc-200/80">
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-6 h-6 rounded-lg bg-pink-100 flex items-center justify-center">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-pink-200 bg-white shadow-sm">
                   <Sparkles className="h-3.5 w-3.5 text-pink-600" />
                 </div>
-                <span className="text-sm font-semibold text-neutral-800">2. Cikarilan Prompt</span>
+                <span className="text-sm font-semibold text-zinc-900">02 · Çıkarılan prompt</span>
               </div>
 
               {!reversedPrompt && !isAnalyzing && (
@@ -473,7 +457,7 @@ export function ReverseEngineerPanel({ onClose }: ReverseEngineerPanelProps) {
               {reversedPrompt && (
                 <div className="space-y-3">
                   {/* Main Prompt */}
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-100">
+                  <div className="rounded-2xl border border-violet-100 bg-white p-3 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-xs font-medium text-violet-600 uppercase tracking-wide flex items-center gap-1">
                         <Sparkles className="h-3 w-3" />
@@ -623,12 +607,12 @@ export function ReverseEngineerPanel({ onClose }: ReverseEngineerPanelProps) {
             </div>
 
             {/* Column 3: Generate */}
-          <div className="p-4 lg:w-1/3 lg:overflow-y-auto shrink-0 lg:shrink min-h-0">
+          <div className="min-h-0 shrink-0 p-5 sm:p-6 lg:w-1/3 lg:shrink lg:overflow-y-auto">
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-6 h-6 rounded-lg bg-emerald-100 flex items-center justify-center">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-emerald-200 bg-white shadow-sm">
                   <Wand2 className="h-3.5 w-3.5 text-emerald-600" />
                 </div>
-                <span className="text-sm font-semibold text-neutral-800">3. Yeniden Uret</span>
+                <span className="text-sm font-semibold text-zinc-900">03 · Yeniden üret</span>
               </div>
 
               {currentImageGen === 'none' ? (
@@ -772,7 +756,7 @@ export function ReverseEngineerPanel({ onClose }: ReverseEngineerPanelProps) {
                   <Button
                     onClick={handleGenerate}
                     disabled={isGenerating || (!useCustomPrompt && !reversedPrompt?.reverse_prompt) || (useCustomPrompt && !customPrompt.trim())}
-                    className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25"
+                    className="w-full rounded-full bg-zinc-950 text-white shadow-sm hover:bg-zinc-800"
                   >
                     {isGenerating ? (
                       <>
@@ -823,7 +807,6 @@ export function ReverseEngineerPanel({ onClose }: ReverseEngineerPanelProps) {
               )}
           </div>
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

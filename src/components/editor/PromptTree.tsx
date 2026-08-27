@@ -3,7 +3,8 @@
 import { usePromptStore } from '@/lib/store/promptStore';
 import { jsonToTree } from '@/lib/json/traverser';
 import { TreeNodeComponent } from './TreeNode';
-import { ChevronDown, ChevronRight, Plus, Layers, X } from 'lucide-react';
+import { ModalShell } from '@/components/ui/modal-shell';
+import { ChevronDown, ChevronRight, Plus, Layers } from 'lucide-react';
 import { useState } from 'react';
 
 export function PromptTree() {
@@ -113,17 +114,15 @@ export function PromptTree() {
 
       {/* Add Key Modal */}
       {showAddModal && (
-        <div className="absolute inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-xl p-4 mx-4 w-full max-w-xs">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-neutral-800">Yeni Alan Ekle</h3>
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="h-7 w-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+        <ModalShell
+          onClose={() => setShowAddModal(false)}
+          eyebrow="Prompt structure"
+          title="Yeni alan ekle"
+          description="Kök seviyesinde yeni bir anahtar oluştur."
+          symbol="field"
+          maxWidthClassName="max-w-sm"
+        >
+          <div>
             <input
               type="text"
               value={newKeyName}
@@ -133,26 +132,26 @@ export function PromptTree() {
                 if (e.key === 'Escape') setShowAddModal(false);
               }}
               placeholder="Alan adı..."
-              className="w-full px-3 py-2 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+              className="h-12 w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 text-sm text-zinc-950 outline-none placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200"
               autoFocus
             />
-            <div className="flex gap-2 mt-3">
-              <button
-                onClick={confirmAddKey}
-                disabled={!newKeyName.trim()}
-                className="flex-1 px-3 py-2 rounded-xl bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Ekle
-              </button>
+            <div className="mt-5 flex flex-col-reverse gap-2 border-t border-zinc-100 pt-5 sm:flex-row sm:justify-end">
               <button
                 onClick={() => setShowAddModal(false)}
-                className="px-3 py-2 rounded-xl border border-neutral-200 text-neutral-600 text-sm font-medium hover:bg-neutral-50"
+                className="h-11 rounded-full px-5 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-950"
               >
                 İptal
               </button>
+              <button
+                onClick={confirmAddKey}
+                disabled={!newKeyName.trim()}
+                className="h-11 rounded-full bg-zinc-950 px-6 text-sm font-medium text-white shadow-sm transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Alanı ekle
+              </button>
             </div>
           </div>
-        </div>
+        </ModalShell>
       )}
     </div>
   );

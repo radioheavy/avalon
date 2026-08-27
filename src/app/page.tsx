@@ -13,8 +13,8 @@ import { Logo } from '@/components/brand/Logo';
 import { OnboardingScreen } from '@/components/onboarding/OnboardingScreen';
 import { DashboardHome } from '@/components/dashboard/DashboardHome';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { ModalShell } from '@/components/ui/modal-shell';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -27,7 +27,6 @@ import {
   ImageIcon,
   Loader2,
   Sparkles,
-  X,
 } from 'lucide-react';
 
 type View = 'dashboard' | 'editor';
@@ -715,92 +714,72 @@ function EditorApp() {
 
       {/* Create Modal */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-zinc-950/30 backdrop-blur-sm"
-            onClick={() => {
-              setShowCreate(false);
-              setCreateError(null);
-            }}
-          />
-          <Card className="relative w-full max-w-lg rounded-[28px] border-zinc-200 bg-white p-6 shadow-2xl shadow-zinc-950/15 sm:p-7">
-            <div className="mb-7 flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-400">
-                  New workspace
+        <ModalShell
+          onClose={() => {
+            setShowCreate(false);
+            setCreateError(null);
+          }}
+          eyebrow="New workspace"
+          title="Create a prompt"
+          description="Start with a clean structure or bring your own JSON."
+          symbol="compose"
+          maxWidthClassName="max-w-lg"
+        >
+          <div className="space-y-5">
+            <div>
+              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                Prompt name
+              </label>
+              <Input
+                autoFocus
+                placeholder="e.g. Cinematic portrait"
+                value={newName}
+                onChange={(event) => setNewName(event.target.value)}
+                className="h-12 rounded-2xl border-zinc-200 bg-zinc-50 px-4 text-zinc-950 shadow-none focus-visible:border-zinc-400 focus-visible:ring-zinc-200"
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                Import JSON <span className="font-normal normal-case tracking-normal text-zinc-400">(optional)</span>
+              </label>
+              <Textarea
+                placeholder='{"key": "value"}'
+                value={importJson}
+                onChange={(event) => {
+                  setImportJson(event.target.value);
+                  if (createError) setCreateError(null);
+                }}
+                rows={5}
+                aria-invalid={Boolean(createError)}
+                className="rounded-2xl border-zinc-200 bg-zinc-50 p-4 font-mono text-sm shadow-none focus-visible:border-zinc-400 focus-visible:ring-zinc-200"
+              />
+              {createError && (
+                <p role="alert" className="mt-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">
+                  {createError}
                 </p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">
-                  Create a prompt
-                </h2>
-                <p className="mt-1 text-sm text-zinc-500">
-                  Start blank or bring an existing JSON structure.
-                </p>
-              </div>
-              <button
-                type="button"
-                aria-label="Close create prompt"
+              )}
+            </div>
+            <div className="flex flex-col-reverse gap-2 border-t border-zinc-100 pt-5 sm:flex-row sm:justify-end">
+              <Button
+                variant="ghost"
                 onClick={() => {
                   setShowCreate(false);
                   setCreateError(null);
                 }}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+                className="h-11 rounded-full px-5 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
               >
-                <X className="h-4 w-4" />
-              </button>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCreate}
+                className="h-11 rounded-full bg-zinc-950 px-6 text-white shadow-sm hover:bg-zinc-800"
+                disabled={!newName.trim()}
+              >
+                Create prompt
+              </Button>
             </div>
-
-            <div className="space-y-5">
-              <div>
-                <label className="mb-2 block text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">
-                  Prompt name
-                </label>
-                <Input
-                  autoFocus
-                  placeholder="e.g. Cinematic portrait"
-                  value={newName}
-                  onChange={(event) => setNewName(event.target.value)}
-                  className="h-12 rounded-2xl border-zinc-200 bg-zinc-50 px-4 focus-visible:border-zinc-400 focus-visible:ring-zinc-200"
-                />
-              </div>
-              <div>
-                <label className="mb-2 block text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">
-                  Import JSON <span className="font-normal normal-case tracking-normal text-zinc-400">(optional)</span>
-                </label>
-                <Textarea
-                  placeholder='{"key": "value"}'
-                  value={importJson}
-                  onChange={(event) => {
-                    setImportJson(event.target.value);
-                    if (createError) setCreateError(null);
-                  }}
-                  rows={5}
-                  aria-invalid={Boolean(createError)}
-                  className="rounded-2xl border-zinc-200 bg-zinc-50 p-4 font-mono text-sm focus-visible:border-zinc-400 focus-visible:ring-zinc-200"
-                />
-                {createError && <p className="mt-2 text-xs text-red-600">{createError}</p>}
-              </div>
-              <div className="flex flex-col-reverse gap-3 pt-1 sm:flex-row">
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setShowCreate(false);
-                    setCreateError(null);
-                  }}
-                  className="h-11 rounded-full px-5 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleCreate}
-                  className="h-11 flex-1 rounded-full bg-zinc-900 text-white hover:bg-zinc-800"
-                  disabled={!newName.trim()}
-                >
-                  Create prompt
-                </Button>
-              </div>
-            </div>
-          </Card>
-        </div>
+          </div>
+        </ModalShell>
       )}
 
       {/* Reverse Engineer Modal */}
@@ -815,54 +794,38 @@ function EditorApp() {
 
       {/* Settings Modal */}
       {showSettings && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-zinc-950/30 backdrop-blur-sm"
-            onClick={() => setShowSettings(false)}
-          />
-          <Card className="relative w-full max-w-sm rounded-[28px] border-zinc-200 bg-white p-6 shadow-2xl shadow-zinc-950/15">
-            <div className="mb-6 flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-400">
-                  Workspace
-                </p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">
-                  Connections
-                </h2>
-              </div>
-              <button
-                type="button"
-                aria-label="Close settings"
-                onClick={() => setShowSettings(false)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
+        <ModalShell
+          onClose={() => setShowSettings(false)}
+          eyebrow="Workspace"
+          title="Connections"
+          description="The providers currently available to this browser."
+          symbol="connections"
+          maxWidthClassName="max-w-md"
+        >
             <div className="space-y-3">
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50/80 p-4">
                 <div className="flex items-center gap-3">
-                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
-                    <Check className="h-5 w-5" />
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-200 bg-white text-emerald-700 shadow-sm">
+                    <Check className="h-4 w-4" />
                   </span>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-zinc-900">{providerNames[currentProvider]}</p>
                     <p className="text-xs text-zinc-500">AI provider connected</p>
                   </div>
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 ring-4 ring-emerald-100" />
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50/80 p-4">
                 <div className="flex items-center gap-3">
-                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-violet-200 bg-white text-violet-700 shadow-sm">
                     {currentImageGen !== 'none' ? (
-                      <Check className="h-5 w-5" />
+                      <Check className="h-4 w-4" />
                     ) : (
-                      <Sparkles className="h-5 w-5" />
+                      <ImageIcon className="h-4 w-4" />
                     )}
                   </span>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-zinc-900">
                       {currentImageGen !== 'none' ? imageGenNames[currentImageGen] : 'Image generation'}
                     </p>
@@ -872,12 +835,17 @@ function EditorApp() {
                       </p>
                     </div>
                   </div>
+                  <span className={`h-2 w-2 rounded-full ring-4 ${
+                    currentImageGen !== 'none'
+                      ? 'bg-violet-500 ring-violet-100'
+                      : 'bg-zinc-300 ring-zinc-100'
+                  }`} />
                 </div>
               </div>
 
               <Button
                 variant="outline"
-                className="mt-2 h-11 w-full rounded-full border-zinc-200"
+                className="mt-2 h-11 w-full rounded-full border-zinc-200 bg-white text-zinc-700 shadow-sm hover:bg-zinc-50 hover:text-zinc-950"
                 onClick={() => {
                   localStorage.removeItem('avalon-onboarding-complete');
                   localStorage.removeItem('avalon-ai-provider');
@@ -895,8 +863,7 @@ function EditorApp() {
                 Credentials are kept for this browser session only.
               </p>
             </div>
-          </Card>
-        </div>
+        </ModalShell>
       )}
     </div>
   );
