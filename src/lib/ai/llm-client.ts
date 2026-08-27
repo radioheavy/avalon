@@ -49,7 +49,7 @@ async function callOpenAI(request: LLMRequest): Promise<LLMResponse> {
       'Authorization': `Bearer ${request.apiKey}`,
     },
     body: JSON.stringify({
-      model: request.model || 'gpt-4o',
+      model: request.model || 'gpt-5.6-terra',
       max_tokens: request.maxTokens || 4096,
       messages: [
         { role: 'system', content: request.systemPrompt },
@@ -106,7 +106,7 @@ async function callAnthropic(request: LLMRequest): Promise<LLMResponse> {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: request.model || 'claude-sonnet-4-20250514',
+      model: request.model || 'claude-sonnet-5-20260630',
       max_tokens: request.maxTokens || 4096,
       system: request.systemPrompt,
       messages: [
@@ -132,7 +132,7 @@ async function callAnthropic(request: LLMRequest): Promise<LLMResponse> {
 
 // Google Gemini API call with vision support
 async function callGemini(request: LLMRequest): Promise<LLMResponse> {
-  const model = request.model || 'gemini-1.5-pro';
+  const model = request.model || 'gemini-3.6-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${request.apiKey}`;
 
   // Build parts array - can include text and image
