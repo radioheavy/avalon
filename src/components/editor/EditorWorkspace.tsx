@@ -14,6 +14,10 @@ import {
   Copy,
   DownloadSimple,
   Eye,
+  FilmStrip,
+  FileText,
+  Clock,
+  FlowArrow,
   FileCode,
   FrameCorners,
   ImageSquare,
@@ -32,13 +36,19 @@ import {
   X,
 } from '@phosphor-icons/react';
 import { Logo } from '@/components/brand/Logo';
-import { ImageExpanderPanel } from '@/components/image/ImageExpanderPanel';
+import {
+  BriefView,
+  ImageStudioView,
+  StructureView,
+  TimelineView,
+  VideoStudioView,
+} from '@/components/editor/PromptDocumentPanels';
 import { ModalShell } from '@/components/ui/modal-shell';
 import { usePromptStore } from '@/lib/store/promptStore';
 import { getValueAtPath } from '@/lib/json/updater';
 import { JsonObject, JsonValue, Prompt } from '@/types/prompt';
 
-type WorkspaceView = 'editor' | 'preview' | 'raw' | 'image';
+type WorkspaceView = 'editor' | 'brief' | 'structure' | 'timeline' | 'preview' | 'raw' | 'image' | 'video';
 type CompactPane = 'map' | 'document' | 'enhance';
 
 type SectionEntry = {
@@ -458,13 +468,16 @@ function DocumentCanvas({
   return (
     <main data-testid="document-canvas" className="h-full min-h-0 min-w-0 bg-zinc-50">
       <div className={view === 'image' ? 'h-full' : 'hidden'}>
-        <ImageExpanderPanel
+        <ImageStudioView
           prompt={prompt}
           activePath={activePath}
           onReturn={() => onViewChange('editor')}
         />
       </div>
-      <div className={view === 'image' ? 'hidden' : 'flex h-full min-h-0 flex-col bg-white'}>
+      <div className={view === 'video' ? 'h-full' : 'hidden'}>
+        <VideoStudioView prompt={prompt} onReturn={() => onViewChange('editor')} />
+      </div>
+      <div className={view === 'image' || view === 'video' ? 'hidden' : 'flex h-full min-h-0 flex-col bg-white'}>
         <div className="flex min-h-16 shrink-0 flex-col gap-3 border-b border-zinc-200 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <span className="text-zinc-900"><SectionIcon name={sectionName} size={22} /></span>
@@ -476,6 +489,9 @@ function DocumentCanvas({
         <div className="flex items-center gap-1 rounded-xl bg-zinc-100 p-1" role="tablist" aria-label="Document view">
           {([
             ['editor', 'Editor', ClipboardText],
+            ['brief', 'Brief', FileText],
+            ['structure', 'Structure', FlowArrow],
+            ['timeline', 'Timeline', Clock],
             ['preview', 'Preview', Eye],
             ['raw', 'Raw JSON', Code],
           ] as const).map(([value, label, Icon]) => (
@@ -496,6 +512,9 @@ function DocumentCanvas({
 
         <div className="min-h-0 flex-1 overflow-y-auto">
         {view === 'editor' && sectionValue !== undefined && <StructuredFields value={sectionValue} path={activePath} />}
+        {view === 'brief' && <BriefView prompt={prompt} />}
+        {view === 'structure' && <StructureView prompt={prompt} />}
+        {view === 'timeline' && <TimelineView prompt={prompt} onOpenVideo={() => onViewChange('video')} />}
         {view === 'preview' && sectionValue !== undefined && <PreviewSurface value={sectionValue} />}
         {view === 'raw' && (
           <div className="flex min-h-full flex-col bg-zinc-950 p-4 sm:p-6">
@@ -705,7 +724,7 @@ export function EditorWorkspace({ prompt, onBack }: { prompt: Prompt; onBack: ()
   const selectSection = (path: string[]) => {
     setActivePath(path);
     setSelectedPath(path);
-    if (view !== 'image') setView('editor');
+    if (view !== 'image' && view !== 'video') setView('editor');
     setCompactPane('document');
   };
 
@@ -714,11 +733,17 @@ export function EditorWorkspace({ prompt, onBack }: { prompt: Prompt; onBack: ()
         ['map', 'Prompt map', MapTrifold],
         ['document', 'Image studio', ImageSquare],
       ] as const)
-    : ([
+    : view === 'video'
+      ? ([
+          ['map', 'Prompt map', MapTrifold],
+          ['document', 'Video studio', FilmStrip],
+        ] as const)
+      : ([
         ['map', 'Prompt map', MapTrifold],
         ['document', 'Document', ClipboardText],
         ['enhance', 'Enhance', ChatTeardropText],
         ['image', 'Studio', ImageSquare],
+        ['video', 'Video', FilmStrip],
       ] as const);
 
   const copyJSON = async () => {
@@ -758,26 +783,30 @@ export function EditorWorkspace({ prompt, onBack }: { prompt: Prompt; onBack: ()
             {view === 'image' ? <ArrowLeft size={16} /> : <ImageSquare size={16} />}
             {view === 'image' ? 'Back to editor' : 'Generate image'}
           </button>
+          <button type="button" onClick={() => { setView(view === 'video' ? 'editor' : 'video'); setCompactPane('document'); }} className="inline-flex h-9 items-center gap-2 rounded-full border border-zinc-200 px-3 text-xs font-medium text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950">
+            {view === 'video' ? <ArrowLeft size={16} /> : <FilmStrip size={16} />}
+            {view === 'video' ? 'Back to editor' : 'Video studio'}
+          </button>
           <span className="rounded-full bg-zinc-100 px-3 py-2 text-xs font-medium text-zinc-600">{providerNames[currentProvider]}</span>
         </div>
       </header>
 
-      <div className={`grid h-11 shrink-0 ${view === 'image' ? 'grid-cols-2' : 'grid-cols-4'} border-b border-zinc-200 bg-white xl:hidden`} role="tablist" aria-label="Editor panes">
+      <div className={`grid h-11 shrink-0 ${view === 'image' || view === 'video' ? 'grid-cols-2' : 'grid-cols-5'} border-b border-zinc-200 bg-white xl:hidden`} role="tablist" aria-label="Editor panes">
         {compactTabs.map(([pane, label, Icon]) => (
           <button
             key={pane}
             type="button"
             role="tab"
-            aria-selected={pane === 'image' ? false : compactPane === pane}
+            aria-selected={pane === 'image' || pane === 'video' ? view === pane : compactPane === pane}
             onClick={() => {
-              if (pane === 'image') {
-                setView('image');
+              if (pane === 'image' || pane === 'video') {
+                setView(pane);
                 setCompactPane('document');
               } else {
                 setCompactPane(pane);
               }
             }}
-            className={`flex items-center justify-center gap-1.5 border-b-2 text-[11px] font-medium sm:gap-2 sm:text-xs ${pane !== 'image' && compactPane === pane ? 'border-violet-600 text-violet-700' : 'border-transparent text-zinc-500'}`}
+            className={`flex items-center justify-center gap-1.5 border-b-2 text-[11px] font-medium sm:gap-2 sm:text-xs ${(pane === 'image' || pane === 'video' ? view === pane : compactPane === pane) ? 'border-violet-600 text-violet-700' : 'border-transparent text-zinc-500'}`}
           ><Icon size={16} />{label}</button>
         ))}
       </div>
@@ -786,10 +815,10 @@ export function EditorWorkspace({ prompt, onBack }: { prompt: Prompt; onBack: ()
         <div className={`${compactPane === 'map' ? 'flex' : 'hidden'} min-h-0 border-r border-zinc-200 xl:flex`}>
           <PromptMap prompt={prompt} activePath={effectivePath} onSelect={selectSection} />
         </div>
-        <div className={`${compactPane === 'document' ? 'flex' : 'hidden'} min-h-0 min-w-0 xl:flex ${view === 'image' ? 'xl:col-span-2' : ''}`}>
+        <div className={`${compactPane === 'document' ? 'flex' : 'hidden'} min-h-0 min-w-0 xl:flex ${view === 'image' || view === 'video' ? 'xl:col-span-2' : ''}`}>
           <DocumentCanvas prompt={prompt} activePath={effectivePath} view={view} onViewChange={setView} />
         </div>
-        <div className={view === 'image' ? 'hidden' : `${compactPane === 'enhance' ? 'flex' : 'hidden'} min-h-0 border-l border-zinc-200 xl:flex`}>
+        <div className={view === 'image' || view === 'video' ? 'hidden' : `${compactPane === 'enhance' ? 'flex' : 'hidden'} min-h-0 border-l border-zinc-200 xl:flex`}>
           <EnhancePanel prompt={prompt} />
         </div>
       </div>

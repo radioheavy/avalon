@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { usePromptStore } from '@/lib/store/promptStore';
 import { EditorWorkspace } from '@/components/editor/EditorWorkspace';
 import { ReverseEngineerPanel } from '@/components/image/ReverseEngineerPanel';
@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ModalShell } from '@/components/ui/modal-shell';
 import { Textarea } from '@/components/ui/textarea';
+import { detectPromptInput, parsePromptBrief } from '@/lib/prompt-document';
 import {
   Check,
   ImageIcon,
@@ -72,6 +73,7 @@ function EditorApp() {
     prompts,
     currentPromptId,
     createPrompt,
+    createDocument,
     deletePrompt,
     setCurrentPrompt,
     getCurrentPrompt,
@@ -89,6 +91,11 @@ function EditorApp() {
   const [importJson, setImportJson] = useState('');
   const [createError, setCreateError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const detectedInput = useMemo(() => detectPromptInput(importJson), [importJson]);
+  const inputProjection = useMemo(
+    () => importJson.trim() ? parsePromptBrief(importJson) : null,
+    [importJson]
+  );
 
   // Onboarding göster
   if (!onboardingComplete) {
@@ -98,19 +105,13 @@ function EditorApp() {
   const prompt = getCurrentPrompt();
 
   const handleCreate = () => {
-    if (!newName.trim()) return;
+    const inferredName = inputProjection?.title && !/^Untitled\b/i.test(inputProjection.title)
+      ? inputProjection.title
+      : 'Untitled prompt';
+    const name = newName.trim() || inferredName;
+    if (!name || (!newName.trim() && !importJson.trim())) return;
 
-    let content = {};
-    if (importJson.trim()) {
-      try {
-        content = JSON.parse(importJson);
-      } catch {
-        setCreateError('That JSON is not valid yet. Check the syntax and try again.');
-        return;
-      }
-    }
-
-    const id = createPrompt(newName.trim(), content);
+    const id = createDocument(name, importJson.trim() ? importJson : {});
     setNewName('');
     setImportJson('');
     setCreateError(null);
@@ -225,39 +226,56 @@ function EditorApp() {
             setCreateError(null);
           }}
           eyebrow="New workspace"
-          title="Create a prompt"
-          description="Start with a clean structure or bring your own JSON."
+          title="Create a prompt document"
+          description="Paste a raw creative brief or structured JSON. Avalon preserves the source and builds the right workspace around it."
           symbol="compose"
           maxWidthClassName="max-w-lg"
         >
           <div className="space-y-5">
             <div>
-              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
-                Prompt name
+              <label htmlFor="document-name" className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                Document name <span className="font-normal normal-case tracking-normal text-zinc-400">(optional with a brief)</span>
               </label>
               <Input
+                id="document-name"
                 autoFocus
-                placeholder="e.g. Cinematic portrait"
+                placeholder="Auto-detected from TITLE when available"
                 value={newName}
                 onChange={(event) => setNewName(event.target.value)}
                 className="h-12 rounded-2xl border-zinc-200 bg-zinc-50 px-4 text-zinc-950 shadow-none focus-visible:border-zinc-400 focus-visible:ring-zinc-200"
               />
             </div>
             <div>
-              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
-                Import JSON <span className="font-normal normal-case tracking-normal text-zinc-400">(optional)</span>
+              <label htmlFor="document-source" className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                Source brief or JSON <span className="font-normal normal-case tracking-normal text-zinc-400">(optional)</span>
               </label>
               <Textarea
-                placeholder='{"key": "value"}'
+                id="document-source"
+                placeholder={'Paste a complete creative brief…\n\nor structured JSON like {"key": "value"}'}
                 value={importJson}
                 onChange={(event) => {
                   setImportJson(event.target.value);
                   if (createError) setCreateError(null);
                 }}
-                rows={5}
+                rows={10}
                 aria-invalid={Boolean(createError)}
-                className="rounded-2xl border-zinc-200 bg-zinc-50 p-4 font-mono text-sm shadow-none focus-visible:border-zinc-400 focus-visible:ring-zinc-200"
+                className="rounded-2xl border-zinc-200 bg-zinc-50 p-4 text-sm leading-6 shadow-none focus-visible:border-zinc-400 focus-visible:ring-zinc-200"
               />
+              {importJson.trim() && inputProjection && (
+                <div className="mt-3 flex flex-wrap gap-2" aria-label="Detected document details">
+                  <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium text-zinc-600">
+                    {detectedInput.type === 'json' ? 'Structured JSON' : 'Plain-text brief'}
+                  </span>
+                  <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[11px] font-medium capitalize text-violet-700">
+                    {inputProjection.mediaType}
+                  </span>
+                  {inputProjection.timeline.length > 0 && (
+                    <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium text-zinc-600">
+                      {inputProjection.timeline.length} timeline segments
+                    </span>
+                  )}
+                </div>
+              )}
               {createError && (
                 <p role="alert" className="mt-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">
                   {createError}
@@ -278,9 +296,9 @@ function EditorApp() {
               <Button
                 onClick={handleCreate}
                 className="h-11 rounded-full bg-zinc-950 px-6 text-white shadow-sm hover:bg-zinc-800"
-                disabled={!newName.trim()}
+                disabled={!newName.trim() && !importJson.trim()}
               >
-                Create prompt
+                Create document
               </Button>
             </div>
           </div>
