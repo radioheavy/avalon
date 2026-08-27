@@ -26,6 +26,10 @@ export async function POST(request: NextRequest) {
         id: Date.now(),
       };
     } else if (action === 'get') {
+      if (!promptId) {
+        return NextResponse.json({ error: 'Prompt ID is required' }, { status: 400 });
+      }
+
       mcpRequest = {
         jsonrpc: '2.0',
         method: 'tools/call',
@@ -52,6 +56,13 @@ export async function POST(request: NextRequest) {
 
     const text = await response.text();
 
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: `prompts.chat request failed (${response.status})` },
+        { status: 502 }
+      );
+    }
+
     // Parse SSE response - extract JSON from "data: " line
     const lines = text.split('\n');
     let jsonData = null;
@@ -74,6 +85,13 @@ export async function POST(request: NextRequest) {
       } catch {
         return NextResponse.json({ error: 'Failed to parse response' }, { status: 500 });
       }
+    }
+
+    if (jsonData.error) {
+      return NextResponse.json(
+        { error: jsonData.error.message || 'prompts.chat returned an error' },
+        { status: 502 }
+      );
     }
 
     // Extract the actual content from MCP response

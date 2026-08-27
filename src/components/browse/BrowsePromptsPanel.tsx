@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePromptStore } from '@/lib/store/promptStore';
+import type { JsonObject } from '@/types/prompt';
 import {
   Search,
   X,
@@ -25,11 +26,11 @@ interface PromptResult {
   slug: string;
   title: string;
   description: string | null;
-  content: string;
+  contentPreview: string;
   type: 'TEXT' | 'STRUCTURED' | 'IMAGE' | 'VIDEO' | 'AUDIO';
   structuredFormat: 'JSON' | 'YAML' | null;
   author: string;
-  category: string;
+  category: string | null;
   tags: string[];
   votes: number;
   createdAt: string;
@@ -56,21 +57,26 @@ const typeColors = {
 };
 
 export function BrowsePromptsPanel({ onClose }: BrowsePromptsPanelProps) {
-  const { createPrompt, setCurrentPrompt } = usePromptStore();
+  const { createPrompt } = usePromptStore();
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<PromptResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [importedIds, setImportedIds] = useState<Set<string>>(new Set());
+  const [importingIds, setImportingIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const searchRequestId = useRef(0);
 
   // Debounced search
   const searchPrompts = useCallback(async (searchQuery: string, type?: string) => {
+    const requestId = ++searchRequestId.current;
+
     if (!searchQuery.trim()) {
       setResults([]);
       setHasSearched(false);
+      setIsLoading(false);
       return;
     }
 
@@ -92,7 +98,9 @@ export function BrowsePromptsPanel({ onClose }: BrowsePromptsPanelProps) {
 
       const data = await response.json();
 
-      if (data.success && data.data?.prompts) {
+      if (requestId !== searchRequestId.current) return;
+
+      if (response.ok && data.success && data.data?.prompts) {
         setResults(data.data.prompts);
       } else {
         setResults([]);
@@ -101,43 +109,65 @@ export function BrowsePromptsPanel({ onClose }: BrowsePromptsPanelProps) {
         }
       }
     } catch (err) {
+      if (requestId !== searchRequestId.current) return;
       console.error('Search error:', err);
       setError('Failed to search prompts');
       setResults([]);
     } finally {
-      setIsLoading(false);
+      if (requestId === searchRequestId.current) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
   // Debounce effect
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (query.trim()) {
-        searchPrompts(query, selectedType || undefined);
-      }
+      searchPrompts(query, selectedType || undefined);
     }, 300);
 
     return () => clearTimeout(timer);
   }, [query, selectedType, searchPrompts]);
 
   // Import prompt
-  const handleImport = (prompt: PromptResult) => {
-    let content = {};
+  const handleImport = async (prompt: PromptResult) => {
+    setImportingIds((prev) => new Set(prev).add(prompt.id));
+    setError(null);
 
-    // Try to parse content as JSON
     try {
-      content = JSON.parse(prompt.content);
-    } catch {
-      // If not JSON, wrap in an object
-      content = { prompt: prompt.content };
+      const response = await fetch('/api/prompts-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get', promptId: prompt.id }),
+      });
+      const data = await response.json();
+
+      if (!response.ok || !data.success || typeof data.data?.content !== 'string') {
+        throw new Error(data.error || 'Failed to load prompt content');
+      }
+
+      let content: JsonObject;
+      try {
+        const parsed: unknown = JSON.parse(data.data.content);
+        content = parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)
+          ? parsed as JsonObject
+          : { prompt: data.data.content };
+      } catch {
+        content = { prompt: data.data.content };
+      }
+
+      createPrompt(prompt.title, content);
+      setImportedIds((prev) => new Set(prev).add(prompt.id));
+    } catch (err) {
+      console.error('Import error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to import prompt');
+    } finally {
+      setImportingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(prompt.id);
+        return next;
+      });
     }
-
-    const id = createPrompt(prompt.title, content);
-    setImportedIds((prev) => new Set([...prev, prompt.id]));
-
-    // Optional: Navigate to the prompt
-    // setCurrentPrompt(id);
-    // onClose();
   };
 
   // Type filter buttons
@@ -263,6 +293,7 @@ export function BrowsePromptsPanel({ onClose }: BrowsePromptsPanelProps) {
               {results.map((prompt) => {
                 const TypeIcon = typeIcons[prompt.type] || FileText;
                 const isImported = importedIds.has(prompt.id);
+                const isImporting = importingIds.has(prompt.id);
 
                 return (
                   <div
@@ -286,7 +317,7 @@ export function BrowsePromptsPanel({ onClose }: BrowsePromptsPanelProps) {
                       {/* Import Button */}
                       <button
                         onClick={() => handleImport(prompt)}
-                        disabled={isImported}
+                        disabled={isImported || isImporting}
                         className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                           isImported
                             ? 'bg-green-100 text-green-700'
@@ -297,6 +328,11 @@ export function BrowsePromptsPanel({ onClose }: BrowsePromptsPanelProps) {
                           <>
                             <Check className="h-4 w-4" />
                             Imported
+                          </>
+                        ) : isImporting ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Importing
                           </>
                         ) : (
                           <>
@@ -313,10 +349,12 @@ export function BrowsePromptsPanel({ onClose }: BrowsePromptsPanelProps) {
                         <User className="h-3 w-3" />
                         {prompt.author}
                       </span>
-                      <span className="flex items-center gap-1">
-                        <Tag className="h-3 w-3" />
-                        {prompt.category}
-                      </span>
+                      {prompt.category && (
+                        <span className="flex items-center gap-1">
+                          <Tag className="h-3 w-3" />
+                          {prompt.category}
+                        </span>
+                      )}
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
                         {new Date(prompt.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -346,8 +384,8 @@ export function BrowsePromptsPanel({ onClose }: BrowsePromptsPanelProps) {
                     <div className="mt-3 pt-3 border-t border-gray-50">
                       <div className="text-xs text-gray-500 font-mono bg-gray-50 rounded-lg p-3 max-h-24 overflow-hidden">
                         <p className="whitespace-pre-wrap break-all line-clamp-4">
-                          {prompt.content.slice(0, 300)}
-                          {prompt.content.length > 300 && '...'}
+                          {prompt.contentPreview.slice(0, 300)}
+                          {prompt.contentPreview.length > 300 && '...'}
                         </p>
                       </div>
                     </div>
