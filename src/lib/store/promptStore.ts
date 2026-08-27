@@ -153,6 +153,13 @@ export const usePromptStore = create<PromptStore>()(
 
         const newContent = deleteValueAtPath(prompt.content, path);
         get().updatePrompt(prompt.id, { content: newContent });
+        const state = get();
+        const isWithinDeletedPath = (candidate: string[] | null) =>
+          candidate !== null && path.every((segment, index) => candidate[index] === segment);
+        set({
+          selectedPath: isWithinDeletedPath(state.selectedPath) ? null : state.selectedPath,
+          editingPath: isWithinDeletedPath(state.editingPath) ? null : state.editingPath,
+        });
       },
 
       addArrayItem: (path, value) => {
@@ -162,8 +169,12 @@ export const usePromptStore = create<PromptStore>()(
         // Get current array and add new item
         let current: JsonValue = prompt.content;
         for (const key of path) {
-          if (current && typeof current === 'object' && !Array.isArray(current)) {
+          if (Array.isArray(current)) {
+            current = current[Number(key)];
+          } else if (current && typeof current === 'object') {
             current = (current as JsonObject)[key];
+          } else {
+            return;
           }
         }
 

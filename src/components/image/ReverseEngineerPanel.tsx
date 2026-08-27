@@ -156,8 +156,6 @@ export function ReverseEngineerPanel({ onClose }: ReverseEngineerPanelProps) {
     const reader = new FileReader();
     reader.onload = (e) => {
       const result = e.target?.result as string;
-      // Extract base64 data (remove data:image/xxx;base64, prefix)
-      const base64Data = result.split(',')[1];
       setUploadedImage(result);
       setImageMimeType(file.type);
       setReversedPrompt(null);
@@ -383,6 +381,8 @@ export function ReverseEngineerPanel({ onClose }: ReverseEngineerPanelProps) {
               ) : (
                 <div className="space-y-3">
                   <div className="relative rounded-2xl overflow-hidden border border-neutral-200">
+                    {/* User-selected previews use an in-memory data URL. */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={uploadedImage}
                       alt="Uploaded"
@@ -777,6 +777,8 @@ export function ReverseEngineerPanel({ onClose }: ReverseEngineerPanelProps) {
                       <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide">Uretilen Gorsel</p>
                       {generatedImages.map((img, i) => (
                         <div key={i} className="relative group rounded-xl overflow-hidden border border-emerald-200">
+                          {/* Generated provider URLs can be data/blob URLs, so they intentionally bypass next/image. */}
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={img.url}
                             alt={`Generated ${i + 1}`}

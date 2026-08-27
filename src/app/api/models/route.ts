@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
 // Format model ID to readable name
 function formatModelName(id: string): string {
   // Remove date suffixes like -20250514
-  let name = id.replace(/-\d{8}$/, '');
+  const name = id.replace(/-\d{8}$/, '');
 
   // Common replacements
   const replacements: Record<string, string> = {

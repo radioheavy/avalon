@@ -66,12 +66,10 @@ export function ImageExpanderPanel() {
   // Dynamic model lists
   const [falModels, setFalModels] = useState<FalModel[]>(FAL_POPULAR_MODELS);
   const [wiroModels, setWiroModels] = useState<WiroModel[]>(WIRO_POPULAR_MODELS);
-  const [isLoadingModels, setIsLoadingModels] = useState(false);
 
   // Fetch models on mount
   useEffect(() => {
     const loadModels = async () => {
-      setIsLoadingModels(true);
       try {
         const [fal, wiro] = await Promise.all([
           fetchFalModels(),
@@ -81,8 +79,6 @@ export function ImageExpanderPanel() {
         setWiroModels(wiro);
       } catch {
         // Keep fallback models
-      } finally {
-        setIsLoadingModels(false);
       }
     };
     loadModels();
@@ -120,16 +116,16 @@ export function ImageExpanderPanel() {
     : 'none';
 
   // Handle image generation
-  const handleGenerate = async () => {
+  const handleGenerate = async (promptOverride?: string) => {
     const apiKey = getImageGenApiKey();
     if (!apiKey) {
       setGenerateError(`${currentImageGen === 'wiro' ? 'Wiro.ai' : 'fal.ai'} API key bulunamadi. Ayarlardan ekleyin.`);
       return;
     }
 
-    const promptToUse = useCustomPrompt
+    const promptToUse = promptOverride ?? (useCustomPrompt
       ? customPrompt
-      : expandedImagePrompt?.expanded_prompt || input;
+      : expandedImagePrompt?.expanded_prompt || input);
 
     if (!promptToUse.trim()) {
       setGenerateError('Prompt gerekli');
@@ -253,10 +249,10 @@ export function ImageExpanderPanel() {
     <div className="h-full flex flex-col bg-white">
       {/* Header */}
       <div className="h-12 px-4 border-b border-neutral-100 flex items-center gap-2 shrink-0">
-        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-pink-500 to-orange-400 flex items-center justify-center">
-          <ImageIcon className="h-4 w-4 text-white" />
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-700 shadow-sm">
+          <ImageIcon className="h-4 w-4" />
         </div>
-        <span className="font-semibold text-neutral-800 text-sm">Image Prompt Expander</span>
+        <span className="text-sm font-semibold text-zinc-900">Image studio</span>
       </div>
 
       {/* Content */}
@@ -282,7 +278,7 @@ export function ImageExpanderPanel() {
           <Button
             onClick={handleExpand}
             disabled={!input.trim() || isExpandingImage}
-            className="w-full mt-3 rounded-xl bg-gradient-to-r from-pink-500 to-orange-400 hover:from-pink-600 hover:to-orange-500 text-white shadow-lg shadow-pink-500/25"
+            className="mt-3 w-full rounded-full bg-zinc-950 text-white shadow-sm hover:bg-zinc-800"
           >
             {isExpandingImage ? (
               <>
@@ -314,7 +310,7 @@ export function ImageExpanderPanel() {
         {expandedImagePrompt && (
           <div className="space-y-3">
             {/* Main Prompt */}
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-pink-50 to-orange-50 border border-pink-100">
+            <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
               <p className="text-xs font-medium text-pink-600 mb-2 uppercase tracking-wide flex items-center gap-1.5">
                 <Sparkles className="h-3.5 w-3.5" />
                 Expanded Prompt
@@ -547,11 +543,11 @@ export function ImageExpanderPanel() {
 
             {/* Image Generation Section - After Expand */}
             {currentImageGen !== 'none' && (
-              <div className="mt-4 p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100">
+              <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
-                      <Wand2 className="h-4 w-4 text-white" />
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-700 shadow-sm">
+                      <Wand2 className="h-4 w-4" />
                     </div>
                     <span className="font-semibold text-neutral-800 text-sm">Image Create</span>
                   </div>
@@ -673,9 +669,9 @@ export function ImageExpanderPanel() {
 
                 {/* Generate Button */}
                 <Button
-                  onClick={handleGenerate}
+                  onClick={() => handleGenerate()}
                   disabled={isGenerating || (!useCustomPrompt && !expandedImagePrompt?.expanded_prompt) || (useCustomPrompt && !customPrompt.trim())}
-                  className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25"
+                  className="w-full rounded-full bg-zinc-950 text-white shadow-sm hover:bg-zinc-800"
                 >
                   {isGenerating ? (
                     <>
@@ -696,6 +692,8 @@ export function ImageExpanderPanel() {
                     <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide">Generated</p>
                     {generatedImages.map((img, i) => (
                       <div key={i} className="relative group rounded-xl overflow-hidden border border-emerald-200">
+                        {/* Generated provider URLs can be data/blob URLs, so they intentionally bypass next/image. */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={img.url}
                           alt={`Generated ${i + 1}`}
@@ -730,8 +728,8 @@ export function ImageExpanderPanel() {
         {/* Empty state */}
         {!expandedImagePrompt && !isExpandingImage && !expandImageError && (
           <div className="text-center py-8">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-100 to-orange-100 flex items-center justify-center mx-auto mb-4">
-              <ImageIcon className="h-8 w-8 text-pink-400" />
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-400 shadow-sm">
+              <ImageIcon className="h-7 w-7" />
             </div>
             <p className="font-medium text-neutral-800 mb-1">Prompt Expander</p>
             <p className="text-sm text-neutral-500 max-w-[200px] mx-auto">
@@ -748,8 +746,8 @@ export function ImageExpanderPanel() {
               className="w-full flex items-center justify-between p-3 rounded-xl bg-neutral-50 hover:bg-neutral-100 border border-neutral-200 transition-colors"
             >
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
-                  <Wand2 className="h-3.5 w-3.5 text-white" />
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 shadow-sm">
+                  <Wand2 className="h-3.5 w-3.5" />
                 </div>
                 <span className="text-sm font-medium text-neutral-700">Quick Generate</span>
               </div>
@@ -761,7 +759,7 @@ export function ImageExpanderPanel() {
             </button>
 
             {showGenerator && (
-              <div className="mt-3 p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100">
+              <div className="mt-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
                 <p className="text-xs text-neutral-500 mb-3">
                   Expand&apos;e gerek kalmadan direkt gorsel uret
                 </p>
@@ -853,10 +851,10 @@ export function ImageExpanderPanel() {
                 <Button
                   onClick={() => {
                     setUseCustomPrompt(true);
-                    handleGenerate();
+                    handleGenerate(customPrompt);
                   }}
                   disabled={isGenerating || !customPrompt.trim()}
-                  className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25"
+                  className="w-full rounded-full bg-zinc-950 text-white shadow-sm hover:bg-zinc-800"
                 >
                   {isGenerating ? (
                     <>
@@ -877,6 +875,8 @@ export function ImageExpanderPanel() {
                     <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide">Generated</p>
                     {generatedImages.map((img, i) => (
                       <div key={i} className="relative group rounded-xl overflow-hidden border border-emerald-200">
+                        {/* Generated provider URLs can be data/blob URLs, so they intentionally bypass next/image. */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={img.url}
                           alt={`Generated ${i + 1}`}

@@ -8,29 +8,31 @@ export function setValueAtPath(
   path: string[],
   value: JsonValue
 ): JsonObject {
-  if (path.length === 0) {
-    return value as JsonObject;
-  }
+  const setNestedValue = (current: JsonValue, remainingPath: string[]): JsonValue => {
+    if (remainingPath.length === 0) return value;
 
-  const [head, ...tail] = path;
+    const [head, ...tail] = remainingPath;
+    if (Array.isArray(current)) {
+      const index = Number(head);
+      if (!Number.isInteger(index) || index < 0) return current;
+      const next = [...current];
+      const fallback: JsonValue = tail.length > 0 && /^\d+$/.test(tail[0]) ? [] : {};
+      next[index] = setNestedValue(next[index] ?? fallback, tail);
+      return next;
+    }
 
-  if (tail.length === 0) {
-    return { ...obj, [head]: value };
-  }
-
-  const currentValue = obj[head];
-  if (typeof currentValue === 'object' && currentValue !== null && !Array.isArray(currentValue)) {
+    const record = current && typeof current === 'object' ? current as JsonObject : {};
+    const fallback: JsonValue = tail.length > 0 && /^\d+$/.test(tail[0]) ? [] : {};
     return {
-      ...obj,
-      [head]: setValueAtPath(currentValue as JsonObject, tail, value),
+      ...record,
+      [head]: setNestedValue(record[head] ?? fallback, tail),
     };
-  }
-
-  // If the path doesn't exist, create nested objects
-  return {
-    ...obj,
-    [head]: setValueAtPath({}, tail, value),
   };
+
+  const result = setNestedValue(obj, path);
+  return result && typeof result === 'object' && !Array.isArray(result)
+    ? result as JsonObject
+    : obj;
 }
 
 /**
@@ -40,26 +42,31 @@ export function deleteValueAtPath(
   obj: JsonObject,
   path: string[]
 ): JsonObject {
-  if (path.length === 0) {
-    return obj;
-  }
+  const deleteNestedValue = (current: JsonValue, remainingPath: string[]): JsonValue => {
+    if (remainingPath.length === 0) return current;
+    const [head, ...tail] = remainingPath;
 
-  const [head, ...tail] = path;
+    if (Array.isArray(current)) {
+      const index = Number(head);
+      if (!Number.isInteger(index) || index < 0 || index >= current.length) return current;
+      const next = [...current];
+      if (tail.length === 0) next.splice(index, 1);
+      else next[index] = deleteNestedValue(next[index], tail);
+      return next;
+    }
 
-  if (tail.length === 0) {
-    const { [head]: _, ...rest } = obj;
-    return rest;
-  }
+    if (!current || typeof current !== 'object') return current;
+    const record = current as JsonObject;
+    if (!(head in record)) return record;
+    if (tail.length === 0) {
+      const next = { ...record };
+      delete next[head];
+      return next;
+    }
+    return { ...record, [head]: deleteNestedValue(record[head], tail) };
+  };
 
-  const currentValue = obj[head];
-  if (typeof currentValue === 'object' && currentValue !== null && !Array.isArray(currentValue)) {
-    return {
-      ...obj,
-      [head]: deleteValueAtPath(currentValue as JsonObject, tail),
-    };
-  }
-
-  return obj;
+  return deleteNestedValue(obj, path) as JsonObject;
 }
 
 /**
@@ -106,12 +113,14 @@ export function getValueType(
  * Convert path array to string for comparison
  */
 export function pathToString(path: string[]): string {
-  return path.join('.');
+  return path.map((segment) => segment.replace(/~/g, '~0').replace(/\//g, '~1')).join('/');
 }
 
 /**
  * Convert path string back to array
  */
 export function stringToPath(pathString: string): string[] {
-  return pathString ? pathString.split('.') : [];
+  return pathString
+    ? pathString.split('/').map((segment) => segment.replace(/~1/g, '/').replace(/~0/g, '~'))
+    : [];
 }
