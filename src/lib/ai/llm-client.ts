@@ -132,7 +132,7 @@ async function callAnthropic(request: LLMRequest): Promise<LLMResponse> {
 
 // Google Gemini API call with vision support
 async function callGemini(request: LLMRequest): Promise<LLMResponse> {
-  const model = request.model || 'gemini-3.6-flash';
+  const model = request.model || 'gemini-3.7-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${request.apiKey}`;
 
   // Build parts array - can include text and image

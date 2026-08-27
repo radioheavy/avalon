@@ -49,7 +49,7 @@ const AI_PROVIDERS: Record<AIProvider, { name: string; placeholder: string; link
     name: 'Google Gemini',
     placeholder: 'AI...',
     link: 'https://aistudio.google.com/app/apikey',
-    tagline: 'Gemini 3.6 Flash · Pro',
+    tagline: 'Gemini 3.7 Flash · Pro',
     tone: 'from-sky-100 to-blue-100 text-blue-700',
     icon: 'msg',
   },

@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
           finalModel = 'gpt-5.6-terra';
           break;
         case 'google':
-          finalModel = 'gemini-3.6-flash';
+          finalModel = 'gemini-3.7-flash';
           break;
       }
     }
