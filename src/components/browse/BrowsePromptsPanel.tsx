@@ -8,11 +8,8 @@ import {
   X,
   Download,
   Loader2,
-  FileJson,
   Image as ImageIcon,
   Video,
-  Music,
-  FileText,
   Tag,
   User,
   Calendar,
@@ -21,13 +18,15 @@ import {
   Sparkles,
 } from 'lucide-react';
 
+type MediaPromptType = 'IMAGE' | 'VIDEO';
+
 interface PromptResult {
   id: string;
   slug: string;
   title: string;
   description: string | null;
   contentPreview: string;
-  type: 'TEXT' | 'STRUCTURED' | 'IMAGE' | 'VIDEO' | 'AUDIO';
+  type: MediaPromptType;
   structuredFormat: 'JSON' | 'YAML' | null;
   author: string;
   category: string | null;
@@ -41,19 +40,28 @@ interface BrowsePromptsPanelProps {
 }
 
 const typeIcons = {
-  TEXT: FileText,
-  STRUCTURED: FileJson,
   IMAGE: ImageIcon,
   VIDEO: Video,
-  AUDIO: Music,
 };
 
 const typeColors = {
-  TEXT: 'bg-blue-100 text-blue-600',
-  STRUCTURED: 'bg-violet-100 text-violet-600',
   IMAGE: 'bg-pink-100 text-pink-600',
   VIDEO: 'bg-red-100 text-red-600',
-  AUDIO: 'bg-amber-100 text-amber-600',
+};
+
+const mediaTypes: Array<{
+  value: MediaPromptType;
+  label: string;
+  description: string;
+  icon: typeof ImageIcon;
+}> = [
+  { value: 'IMAGE', label: 'Image prompts', description: 'Photos, art and product visuals', icon: ImageIcon },
+  { value: 'VIDEO', label: 'Video prompts', description: 'Scenes, motion and camera direction', icon: Video },
+];
+
+const searchSuggestions: Record<MediaPromptType, string[]> = {
+  IMAGE: ['Product photography', 'Cinematic portrait', 'Editorial fashion', '3D illustration'],
+  VIDEO: ['Cinematic commercial', 'Camera movement', 'Product reveal', 'Animated scene'],
 };
 
 export function BrowsePromptsPanel({ onClose }: BrowsePromptsPanelProps) {
@@ -62,7 +70,7 @@ export function BrowsePromptsPanel({ onClose }: BrowsePromptsPanelProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<PromptResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<MediaPromptType>('IMAGE');
   const [importedIds, setImportedIds] = useState<Set<string>>(new Set());
   const [importingIds, setImportingIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +78,7 @@ export function BrowsePromptsPanel({ onClose }: BrowsePromptsPanelProps) {
   const searchRequestId = useRef(0);
 
   // Debounced search
-  const searchPrompts = useCallback(async (searchQuery: string, type?: string) => {
+  const searchPrompts = useCallback(async (searchQuery: string, type: MediaPromptType) => {
     const requestId = ++searchRequestId.current;
 
     if (!searchQuery.trim()) {
@@ -92,7 +100,7 @@ export function BrowsePromptsPanel({ onClose }: BrowsePromptsPanelProps) {
           action: 'search',
           query: searchQuery,
           limit: 20,
-          ...(type && { type }),
+          type,
         }),
       });
 
@@ -101,7 +109,7 @@ export function BrowsePromptsPanel({ onClose }: BrowsePromptsPanelProps) {
       if (requestId !== searchRequestId.current) return;
 
       if (response.ok && data.success && data.data?.prompts) {
-        setResults(data.data.prompts);
+        setResults(data.data.prompts.filter((prompt: PromptResult) => prompt.type === type));
       } else {
         setResults([]);
         if (data.error) {
@@ -123,7 +131,7 @@ export function BrowsePromptsPanel({ onClose }: BrowsePromptsPanelProps) {
   // Debounce effect
   useEffect(() => {
     const timer = setTimeout(() => {
-      searchPrompts(query, selectedType || undefined);
+      searchPrompts(query, selectedType);
     }, 300);
 
     return () => clearTimeout(timer);
@@ -170,13 +178,11 @@ export function BrowsePromptsPanel({ onClose }: BrowsePromptsPanelProps) {
     }
   };
 
-  // Type filter buttons
-  const types = [
-    { value: null, label: 'All' },
-    { value: 'IMAGE', label: 'Image' },
-    { value: 'TEXT', label: 'Text' },
-    { value: 'STRUCTURED', label: 'Structured' },
-  ];
+  const handleTypeChange = (type: MediaPromptType) => {
+    setSelectedType(type);
+    setResults([]);
+    setError(null);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -196,8 +202,8 @@ export function BrowsePromptsPanel({ onClose }: BrowsePromptsPanelProps) {
                 <Sparkles className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Browse Prompts</h2>
-                <p className="text-sm text-gray-500">Discover prompts from prompts.chat</p>
+                <h2 className="text-xl font-semibold text-gray-900">Discover visual prompts</h2>
+                <p className="text-sm text-gray-500">Find ready-to-use image and video prompts</p>
               </div>
             </div>
             <button
@@ -208,6 +214,37 @@ export function BrowsePromptsPanel({ onClose }: BrowsePromptsPanelProps) {
             </button>
           </div>
 
+          {/* Media Type */}
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            {mediaTypes.map((type) => {
+              const TypeIcon = type.icon;
+              const isSelected = selectedType === type.value;
+
+              return (
+                <button
+                  key={type.value}
+                  type="button"
+                  onClick={() => handleTypeChange(type.value)}
+                  className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${
+                    isSelected
+                      ? 'border-violet-500 bg-violet-50 ring-2 ring-violet-500/10'
+                      : 'border-gray-200 bg-white hover:border-violet-200'
+                  }`}
+                >
+                  <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                    isSelected ? 'bg-violet-500 text-white' : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    <TypeIcon className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-gray-900">{type.label}</span>
+                    <span className="block truncate text-xs text-gray-500">{type.description}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
           {/* Search Input */}
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -215,7 +252,9 @@ export function BrowsePromptsPanel({ onClose }: BrowsePromptsPanelProps) {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search prompts... (e.g. image generation, coding assistant)"
+              placeholder={selectedType === 'IMAGE'
+                ? 'Describe the image prompt you need...'
+                : 'Describe the video prompt you need...'}
               className="w-full h-12 pl-12 pr-4 bg-white rounded-xl border border-gray-200 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 outline-none text-[15px] placeholder:text-gray-400 transition-all"
               autoFocus
             />
@@ -224,19 +263,16 @@ export function BrowsePromptsPanel({ onClose }: BrowsePromptsPanelProps) {
             )}
           </div>
 
-          {/* Type Filters */}
-          <div className="flex items-center gap-2 mt-3">
-            {types.map((type) => (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-gray-400">Try:</span>
+            {searchSuggestions[selectedType].map((suggestion) => (
               <button
-                key={type.value || 'all'}
-                onClick={() => setSelectedType(type.value)}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                  selectedType === type.value
-                    ? 'bg-violet-500 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                key={suggestion}
+                type="button"
+                onClick={() => setQuery(suggestion)}
+                className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-600 ring-1 ring-gray-200 transition-colors hover:bg-violet-50 hover:text-violet-700 hover:ring-violet-200"
               >
-                {type.label}
+                {suggestion}
               </button>
             ))}
           </div>
@@ -248,11 +284,15 @@ export function BrowsePromptsPanel({ onClose }: BrowsePromptsPanelProps) {
           {!hasSearched && !isLoading && (
             <div className="text-center py-16">
               <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                <Search className="h-8 w-8 text-gray-300" />
+                {selectedType === 'IMAGE'
+                  ? <ImageIcon className="h-8 w-8 text-pink-400" />
+                  : <Video className="h-8 w-8 text-red-400" />}
               </div>
-              <p className="text-gray-900 font-medium mb-1">Search for prompts</p>
+              <p className="text-gray-900 font-medium mb-1">
+                Search {selectedType === 'IMAGE' ? 'image' : 'video'} prompts
+              </p>
               <p className="text-sm text-gray-500">
-                Try &quot;image generation&quot;, &quot;coding&quot;, or &quot;writing&quot;
+                Choose a suggestion above or describe the visual you want to create
               </p>
             </div>
           )}
@@ -280,7 +320,9 @@ export function BrowsePromptsPanel({ onClose }: BrowsePromptsPanelProps) {
           {hasSearched && !isLoading && results.length === 0 && !error && (
             <div className="text-center py-16">
               <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                <FileJson className="h-8 w-8 text-gray-300" />
+                {selectedType === 'IMAGE'
+                  ? <ImageIcon className="h-8 w-8 text-gray-300" />
+                  : <Video className="h-8 w-8 text-gray-300" />}
               </div>
               <p className="text-gray-900 font-medium mb-1">No prompts found</p>
               <p className="text-sm text-gray-500">Try a different search term</p>
@@ -291,7 +333,7 @@ export function BrowsePromptsPanel({ onClose }: BrowsePromptsPanelProps) {
           {results.length > 0 && (
             <div className="grid gap-4">
               {results.map((prompt) => {
-                const TypeIcon = typeIcons[prompt.type] || FileText;
+                const TypeIcon = typeIcons[prompt.type];
                 const isImported = importedIds.has(prompt.id);
                 const isImporting = importingIds.has(prompt.id);
 

@@ -10,6 +10,13 @@ export async function POST(request: NextRequest) {
     let mcpRequest;
 
     if (action === 'search') {
+      if (type !== 'IMAGE' && type !== 'VIDEO') {
+        return NextResponse.json(
+          { error: 'Only image and video prompts are supported' },
+          { status: 400 }
+        );
+      }
+
       mcpRequest = {
         jsonrpc: '2.0',
         method: 'tools/call',
