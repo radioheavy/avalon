@@ -11,6 +11,7 @@ import { BrowsePromptsPanel } from '@/components/browse/BrowsePromptsPanel';
 import { LandingPage } from '@/components/landing';
 import { Logo } from '@/components/brand/Logo';
 import { OnboardingScreen } from '@/components/onboarding/OnboardingScreen';
+import { DashboardHome } from '@/components/dashboard/DashboardHome';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -23,14 +24,10 @@ import {
   Copy,
   Eye,
   FileJson,
-  Globe,
   ImageIcon,
   Loader2,
-  Plus,
-  Settings,
   Sparkles,
-  Trash2,
-  Zap,
+  X,
 } from 'lucide-react';
 
 type View = 'dashboard' | 'editor';
@@ -586,6 +583,7 @@ function EditorApp() {
   const [showBrowsePrompts, setShowBrowsePrompts] = useState(false);
   const [newName, setNewName] = useState('');
   const [importJson, setImportJson] = useState('');
+  const [createError, setCreateError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
 
   // Onboarding göster
@@ -603,7 +601,7 @@ function EditorApp() {
       try {
         content = JSON.parse(importJson);
       } catch {
-        alert('Invalid JSON format');
+        setCreateError('That JSON is not valid yet. Check the syntax and try again.');
         return;
       }
     }
@@ -611,6 +609,7 @@ function EditorApp() {
     const id = createPrompt(newName.trim(), content);
     setNewName('');
     setImportJson('');
+    setCreateError(null);
     setShowCreate(false);
     setCurrentPrompt(id);
     setView('editor');
@@ -698,266 +697,105 @@ function EditorApp() {
 
   // DASHBOARD VIEW
   return (
-    <div className="min-h-screen bg-[#f5f5f7]">
-      {/* Header - Premium Apple Style */}
-      <header className="sticky top-0 z-20 bg-white/70 backdrop-blur-2xl border-b border-black/5">
-        <div className="max-w-6xl mx-auto px-6 h-[52px] flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <Logo size={32} className="shadow-sm" />
-            <span className="font-semibold text-[17px] text-gray-900 tracking-tight">Avalon</span>
-          </div>
-
-          {/* Right Section */}
-          <div className="flex items-center gap-3">
-            {/* Connected Services */}
-            <div className="flex items-center gap-2">
-              {/* AI Provider Badge */}
-              <button
-                onClick={() => setShowSettings(true)}
-                className="group flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100/80 hover:bg-gray-200/80 transition-all"
-              >
-                <div className="w-2 h-2 rounded-full bg-green-500 shadow-sm shadow-green-500/50" />
-                <span className="text-[13px] font-medium text-gray-700 group-hover:text-gray-900">{providerNames[currentProvider]}</span>
-              </button>
-
-              {/* Image Gen Badge */}
-              {currentImageGen !== 'none' && (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100/80">
-                  <div className="w-2 h-2 rounded-full bg-violet-500 shadow-sm shadow-violet-500/50" />
-                  <span className="text-[13px] font-medium text-gray-700">{imageGenNames[currentImageGen]}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Settings Button */}
-            <button
-              onClick={() => setShowSettings(true)}
-              className="w-8 h-8 rounded-full bg-gray-100/80 hover:bg-gray-200/80 flex items-center justify-center transition-colors"
-            >
-              <Settings className="h-4 w-4 text-gray-600" />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        {/* Bento Grid Layout */}
-        <div className="grid grid-cols-12 gap-4">
-
-          {/* Welcome Card - Large */}
-          <div className="col-span-12 md:col-span-8 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-3xl p-8 text-white relative overflow-hidden">
-            {/* Pattern */}
-            <div className="absolute inset-0 opacity-10">
-              <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <defs>
-                  <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-                    <circle cx="1" cy="1" r="1" fill="white"/>
-                  </pattern>
-                </defs>
-                <rect width="100" height="100" fill="url(#grid)"/>
-              </svg>
-            </div>
-
-            <div className="relative z-10">
-              <h1 className="text-3xl font-bold mb-2">Welcome back!</h1>
-              <p className="text-white/80 mb-6 max-w-md">
-                Edit JSON prompts visually and optimize them with AI.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  onClick={() => setShowCreate(true)}
-                  className="bg-white text-violet-600 hover:bg-white/90 shadow-lg"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Prompt
-                </Button>
-                <Button
-                  onClick={() => setShowBrowsePrompts(true)}
-                  className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:from-cyan-600 hover:to-blue-600 shadow-lg"
-                >
-                  <Globe className="h-4 w-4 mr-2" />
-                  Browse Prompts
-                </Button>
-                <Button
-                  onClick={() => setShowReverseEngineer(true)}
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg"
-                >
-                  <Zap className="h-4 w-4 mr-2" />
-                  Reverse Engineer
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleCreateSample}
-                  className="border-white/30 text-white hover:bg-white/10 bg-white/5"
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Load Sample
-                </Button>
-              </div>
-            </div>
-
-            {/* Floating Elements */}
-            <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-            <div className="absolute right-12 top-8 w-16 h-16 bg-yellow-400/20 rounded-2xl rotate-12" />
-          </div>
-
-          {/* Stats Card */}
-          <div className="col-span-12 md:col-span-4 bg-white rounded-3xl p-6 border border-neutral-200/50 shadow-sm">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
-                <FileJson className="h-5 w-5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-neutral-800">{prompts.length}</p>
-                <p className="text-sm text-neutral-500">Total Prompts</p>
-              </div>
-            </div>
-            <div className="h-px bg-neutral-100 my-4" />
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-violet-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-neutral-800">AI Assistant</p>
-                <p className="text-xs text-neutral-500">Ready to edit</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Prompts Section Header */}
-          <div className="col-span-12 flex items-center justify-between mt-4">
-            <h2 className="text-lg font-semibold text-neutral-800">My Prompts</h2>
-            {prompts.length > 0 && (
-              <button
-                onClick={() => setShowCreate(true)}
-                className="text-sm text-violet-600 hover:text-violet-700 font-medium flex items-center gap-1"
-              >
-                <Plus className="h-4 w-4" />
-                Add
-              </button>
-            )}
-          </div>
-
-          {/* Prompt Cards */}
-          {prompts.length === 0 ? (
-            <div className="col-span-12 bg-white rounded-3xl border-2 border-dashed border-neutral-200 p-12 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-4">
-                <FileJson className="h-8 w-8 text-neutral-400" />
-              </div>
-              <h3 className="font-semibold text-neutral-800 mb-1">Henüz prompt yok</h3>
-              <p className="text-sm text-neutral-500 mb-4">İlk prompt'unu oluşturarak başla</p>
-            </div>
-          ) : (
-            prompts.map((p, index) => {
-              const colors = [
-                { bg: 'bg-rose-50', icon: 'bg-rose-100', iconColor: 'text-rose-500', border: 'hover:border-rose-200' },
-                { bg: 'bg-sky-50', icon: 'bg-sky-100', iconColor: 'text-sky-500', border: 'hover:border-sky-200' },
-                { bg: 'bg-amber-50', icon: 'bg-amber-100', iconColor: 'text-amber-500', border: 'hover:border-amber-200' },
-                { bg: 'bg-emerald-50', icon: 'bg-emerald-100', iconColor: 'text-emerald-500', border: 'hover:border-emerald-200' },
-                { bg: 'bg-violet-50', icon: 'bg-violet-100', iconColor: 'text-violet-500', border: 'hover:border-violet-200' },
-              ];
-              const color = colors[index % colors.length];
-
-              return (
-                <div
-                  key={p.id}
-                  className={`col-span-12 sm:col-span-6 lg:col-span-4 ${color.bg} rounded-2xl p-5 cursor-pointer border-2 border-transparent ${color.border} transition-all duration-200 group`}
-                  onClick={() => handleOpen(p.id)}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className={`w-10 h-10 rounded-xl ${color.icon} flex items-center justify-center`}>
-                      <FileJson className={`h-5 w-5 ${color.iconColor}`} />
-                    </div>
-                    <button
-                      className="opacity-0 group-hover:opacity-100 h-8 w-8 rounded-lg flex items-center justify-center text-neutral-400 hover:text-red-500 hover:bg-white/50 transition-all"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deletePrompt(p.id);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <h3 className="font-semibold text-neutral-800 mb-1 truncate">{p.name}</h3>
-                  <p className="text-xs text-neutral-500">
-                    {Object.keys(p.content).length} fields • {new Date(p.updatedAt).toLocaleDateString('en-US')}
-                  </p>
-                </div>
-              );
-            })
-          )}
-
-          {/* Quick Add Card */}
-          {prompts.length > 0 && (
-            <div
-              className="col-span-12 sm:col-span-6 lg:col-span-4 bg-white rounded-2xl p-5 cursor-pointer border-2 border-dashed border-neutral-200 hover:border-violet-300 hover:bg-violet-50/50 transition-all duration-200 flex items-center justify-center min-h-[120px]"
-              onClick={() => setShowCreate(true)}
-            >
-              <div className="text-center">
-                <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center mx-auto mb-2">
-                  <Plus className="h-5 w-5 text-neutral-400" />
-                </div>
-                <p className="text-sm font-medium text-neutral-500">New Prompt</p>
-              </div>
-            </div>
-          )}
-        </div>
-      </main>
+    <div className="min-h-screen bg-white text-zinc-900 antialiased">
+      <DashboardHome
+        prompts={prompts}
+        aiProviderName={providerNames[currentProvider]}
+        imageProviderName={
+          currentImageGen !== 'none' ? imageGenNames[currentImageGen] : undefined
+        }
+        onCreate={() => setShowCreate(true)}
+        onBrowse={() => setShowBrowsePrompts(true)}
+        onReverseEngineer={() => setShowReverseEngineer(true)}
+        onLoadSample={handleCreateSample}
+        onOpenPrompt={handleOpen}
+        onDeletePrompt={deletePrompt}
+        onOpenSettings={() => setShowSettings(true)}
+      />
 
       {/* Create Modal */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setShowCreate(false)} />
-          <Card className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-neutral-800">New Prompt</h2>
+          <div
+            className="absolute inset-0 bg-zinc-950/30 backdrop-blur-sm"
+            onClick={() => {
+              setShowCreate(false);
+              setCreateError(null);
+            }}
+          />
+          <Card className="relative w-full max-w-lg rounded-[28px] border-zinc-200 bg-white p-6 shadow-2xl shadow-zinc-950/15 sm:p-7">
+            <div className="mb-7 flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-400">
+                  New workspace
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">
+                  Create a prompt
+                </h2>
+                <p className="mt-1 text-sm text-zinc-500">
+                  Start blank or bring an existing JSON structure.
+                </p>
+              </div>
               <button
-                onClick={() => setShowCreate(false)}
-                className="h-8 w-8 rounded-full flex items-center justify-center text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition-colors"
+                type="button"
+                aria-label="Close create prompt"
+                onClick={() => {
+                  setShowCreate(false);
+                  setCreateError(null);
+                }}
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
               >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div>
-                <label className="text-sm font-medium text-neutral-700 mb-2 block">Prompt Name</label>
+                <label className="mb-2 block text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">
+                  Prompt name
+                </label>
                 <Input
-                  placeholder="e.g. Image Generation Prompt"
+                  autoFocus
+                  placeholder="e.g. Cinematic portrait"
                   value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  className="h-12 rounded-xl border-neutral-200 focus:border-violet-500 focus:ring-violet-500/20"
+                  onChange={(event) => setNewName(event.target.value)}
+                  className="h-12 rounded-2xl border-zinc-200 bg-zinc-50 px-4 focus-visible:border-zinc-400 focus-visible:ring-zinc-200"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-neutral-700 mb-2 block">
-                  Import JSON <span className="text-neutral-400 font-normal">(optional)</span>
+                <label className="mb-2 block text-xs font-medium uppercase tracking-[0.12em] text-zinc-500">
+                  Import JSON <span className="font-normal normal-case tracking-normal text-zinc-400">(optional)</span>
                 </label>
                 <Textarea
                   placeholder='{"key": "value"}'
                   value={importJson}
-                  onChange={(e) => setImportJson(e.target.value)}
+                  onChange={(event) => {
+                    setImportJson(event.target.value);
+                    if (createError) setCreateError(null);
+                  }}
                   rows={5}
-                  className="font-mono text-sm rounded-xl border-neutral-200 focus:border-violet-500 focus:ring-violet-500/20"
+                  aria-invalid={Boolean(createError)}
+                  className="rounded-2xl border-zinc-200 bg-zinc-50 p-4 font-mono text-sm focus-visible:border-zinc-400 focus-visible:ring-zinc-200"
                 />
+                {createError && <p className="mt-2 text-xs text-red-600">{createError}</p>}
               </div>
-              <div className="flex gap-3 pt-2">
+              <div className="flex flex-col-reverse gap-3 pt-1 sm:flex-row">
                 <Button
-                  onClick={handleCreate}
-                  className="flex-1 h-11 rounded-xl bg-violet-600 hover:bg-violet-700"
-                  disabled={!newName.trim()}
-                >
-                  Create
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowCreate(false)}
-                  className="h-11 rounded-xl"
+                  variant="ghost"
+                  onClick={() => {
+                    setShowCreate(false);
+                    setCreateError(null);
+                  }}
+                  className="h-11 rounded-full px-5 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
                 >
                   Cancel
+                </Button>
+                <Button
+                  onClick={handleCreate}
+                  className="h-11 flex-1 rounded-full bg-zinc-900 text-white hover:bg-zinc-800"
+                  disabled={!newName.trim()}
+                >
+                  Create prompt
                 </Button>
               </div>
             </div>
@@ -978,30 +816,60 @@ function EditorApp() {
       {/* Settings Modal */}
       {showSettings && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setShowSettings(false)} />
-          <Card className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-neutral-800">Settings</h2>
+          <div
+            className="absolute inset-0 bg-zinc-950/30 backdrop-blur-sm"
+            onClick={() => setShowSettings(false)}
+          />
+          <Card className="relative w-full max-w-sm rounded-[28px] border-zinc-200 bg-white p-6 shadow-2xl shadow-zinc-950/15">
+            <div className="mb-6 flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-400">
+                  Workspace
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">
+                  Connections
+                </h2>
+              </div>
               <button
+                type="button"
+                aria-label="Close settings"
                 onClick={() => setShowSettings(false)}
-                className="h-8 w-8 rounded-full flex items-center justify-center text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition-colors"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
               >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="space-y-4">
-              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
-                      <Check className="h-5 w-5 text-emerald-600" />
-                    </div>
+            <div className="space-y-3">
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+                    <Check className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-900">{providerNames[currentProvider]}</p>
+                    <p className="text-xs text-zinc-500">AI provider connected</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
+                    {currentImageGen !== 'none' ? (
+                      <Check className="h-5 w-5" />
+                    ) : (
+                      <Sparkles className="h-5 w-5" />
+                    )}
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-900">
+                      {currentImageGen !== 'none' ? imageGenNames[currentImageGen] : 'Image generation'}
+                    </p>
                     <div>
-                      <p className="font-medium text-neutral-800">{providerNames[currentProvider]}</p>
-                      <p className="text-xs text-emerald-600">Bağlı</p>
+                      <p className="text-xs text-zinc-500">
+                        {currentImageGen !== 'none' ? 'Image provider connected' : 'Not configured'}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1009,16 +877,23 @@ function EditorApp() {
 
               <Button
                 variant="outline"
-                className="w-full h-11 rounded-xl"
+                className="mt-2 h-11 w-full rounded-full border-zinc-200"
                 onClick={() => {
                   localStorage.removeItem('avalon-onboarding-complete');
                   localStorage.removeItem('avalon-ai-provider');
+                  localStorage.removeItem('avalon-image-gen-provider');
+                  localStorage.removeItem('avalon-wiro-auth-mode');
                   sessionStorage.removeItem('avalon-api-key');
+                  sessionStorage.removeItem('avalon-image-gen-api-key');
+                  sessionStorage.removeItem('avalon-wiro-api-secret');
                   window.location.reload();
                 }}
               >
-                AI Ayarlarını Değiştir
+                Re-run setup
               </Button>
+              <p className="px-3 text-center text-[11px] leading-relaxed text-zinc-400">
+                Credentials are kept for this browser session only.
+              </p>
             </div>
           </Card>
         </div>
