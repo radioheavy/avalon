@@ -43,13 +43,13 @@ export async function POST(req: NextRequest) {
     if (!finalModel) {
       switch (provider) {
         case 'anthropic':
-          finalModel = 'claude-sonnet-4-20250514';
+          finalModel = 'claude-sonnet-5-20260630';
           break;
         case 'openai':
-          finalModel = 'gpt-4o';
+          finalModel = 'gpt-5.6-terra';
           break;
         case 'google':
-          finalModel = 'gemini-1.5-pro';
+          finalModel = 'gemini-3.7-flash';
           break;
       }
     }

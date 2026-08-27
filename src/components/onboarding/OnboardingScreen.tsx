@@ -270,7 +270,15 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               testState={imgTestState}
               onBack={() => goTo('api-setup')}
               onTest={testImageGenKey}
-              onSkip={() => goTo('ready')}
+              onSkip={() => {
+                // If the user picked fal/wiro but skipped without entering a
+                // key, drop the provider so we don't half-save a name with no
+                // secret. Keyed completions are persisted in <ReadyStep>.
+                if (selectedImageGen !== 'none' && !imageGenKey.trim()) {
+                  setSelectedImageGen('none');
+                }
+                goTo('ready');
+              }}
             />
           )}
           {step === 'ready' && (
