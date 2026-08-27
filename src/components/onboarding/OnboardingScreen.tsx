@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
 import { Button } from '@/components/ui/button';
+import { testWiroCredentials, type WiroAuthMode } from '@/lib/ai/wiro-client';
 import { cn } from '@/lib/utils';
 
 // ----- Types ----------------------------------------------------------------
@@ -66,9 +67,9 @@ const IMAGE_GEN_PROVIDERS: Record<Exclude<ImageGenProvider, 'none'>, { name: str
   },
   wiro: {
     name: 'Wiro.ai',
-    placeholder: 'API key (API Key Only mode)',
-    link: 'https://wiro.ai/apps',
-    description: 'Nano Banana Pro — create project, pick "API Key Only"',
+    placeholder: 'Wiro project API key',
+    link: 'https://wiro.ai/panel/project/new',
+    description: 'Signature (key + secret) or API Key Only',
     tone: 'from-violet-100 to-indigo-100 text-violet-700',
     glyph: 'W',
   },
@@ -132,6 +133,8 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   // Image gen state
   const [selectedImageGen, setSelectedImageGen] = useState<ImageGenProvider>('none');
   const [imageGenKey, setImageGenKey] = useState('');
+  const [wiroAuthMode, setWiroAuthMode] = useState<WiroAuthMode>('signature');
+  const [wiroApiSecret, setWiroApiSecret] = useState('');
   const [imgTestState, setImgTestState] = useState<TestState>('idle');
 
   // Fade key for soft step transitions
@@ -150,6 +153,17 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       if (selectedImageGen !== 'none') {
         localStorage.setItem('avalon-image-gen-provider', selectedImageGen);
         if (imageGenKey) sessionStorage.setItem('avalon-image-gen-api-key', imageGenKey);
+        if (selectedImageGen === 'wiro') {
+          localStorage.setItem('avalon-wiro-auth-mode', wiroAuthMode);
+          if (wiroAuthMode === 'signature' && wiroApiSecret) {
+            sessionStorage.setItem('avalon-wiro-api-secret', wiroApiSecret);
+          } else {
+            sessionStorage.removeItem('avalon-wiro-api-secret');
+          }
+        } else {
+          localStorage.removeItem('avalon-wiro-auth-mode');
+          sessionStorage.removeItem('avalon-wiro-api-secret');
+        }
       }
     } catch {
       // localStorage may be unavailable (private mode); continue.
@@ -182,7 +196,11 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   };
 
   const testImageGenKey = async () => {
-    if (!imageGenKey.trim() || selectedImageGen === 'none') return;
+    if (
+      !imageGenKey.trim() ||
+      selectedImageGen === 'none' ||
+      (selectedImageGen === 'wiro' && wiroAuthMode === 'signature' && !wiroApiSecret.trim())
+    ) return;
     setImgTestState('testing');
     try {
       let ok = false;
@@ -197,8 +215,10 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         });
         ok = res.status !== 401 && res.status !== 403;
       } else {
-        // wiro.ai — trust-on-input, the editor validates on first real call.
-        ok = true;
+        ok = await testWiroCredentials({
+          apiKey: imageGenKey,
+          apiSecret: wiroAuthMode === 'signature' ? wiroApiSecret : undefined,
+        });
       }
       if (ok) {
         setImgTestState('success');
@@ -212,7 +232,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-white text-zinc-900 antialiased">
+    <div className="relative min-h-screen overflow-x-hidden bg-white text-zinc-900 antialiased">
       {/* background mesh (lighter than landing) */}
       <div
         aria-hidden
@@ -260,11 +280,24 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               onSelect={(p) => {
                 setSelectedImageGen(p);
                 setImageGenKey('');
+                setWiroApiSecret('');
+                setWiroAuthMode('signature');
                 setImgTestState('idle');
               }}
               apiKey={imageGenKey}
               onApiKeyChange={(v) => {
                 setImageGenKey(v);
+                if (imgTestState !== 'idle') setImgTestState('idle');
+              }}
+              wiroAuthMode={wiroAuthMode}
+              onWiroAuthModeChange={(mode) => {
+                setWiroAuthMode(mode);
+                setWiroApiSecret('');
+                setImgTestState('idle');
+              }}
+              wiroApiSecret={wiroApiSecret}
+              onWiroApiSecretChange={(value) => {
+                setWiroApiSecret(value);
                 if (imgTestState !== 'idle') setImgTestState('idle');
               }}
               testState={imgTestState}
@@ -274,7 +307,14 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                 // If the user picked fal/wiro but skipped without entering a
                 // key, drop the provider so we don't half-save a name with no
                 // secret. Keyed completions are persisted in <ReadyStep>.
-                if (selectedImageGen !== 'none' && !imageGenKey.trim()) {
+                const missingWiroSecret =
+                  selectedImageGen === 'wiro' &&
+                  wiroAuthMode === 'signature' &&
+                  !wiroApiSecret.trim();
+                if (
+                  selectedImageGen !== 'none' &&
+                  (!imageGenKey.trim() || missingWiroSecret)
+                ) {
                   setSelectedImageGen('none');
                 }
                 goTo('ready');
@@ -519,13 +559,32 @@ function ImageGenStep(props: {
   onSelect: (p: ImageGenProvider) => void;
   apiKey: string;
   onApiKeyChange: (v: string) => void;
+  wiroAuthMode: WiroAuthMode;
+  onWiroAuthModeChange: (mode: WiroAuthMode) => void;
+  wiroApiSecret: string;
+  onWiroApiSecretChange: (value: string) => void;
   testState: TestState;
   onBack: () => void;
   onTest: () => void;
   onSkip: () => void;
 }) {
-  const { selected, onSelect, apiKey, onApiKeyChange, testState, onBack, onTest, onSkip } = props;
+  const {
+    selected,
+    onSelect,
+    apiKey,
+    onApiKeyChange,
+    wiroAuthMode,
+    onWiroAuthModeChange,
+    wiroApiSecret,
+    onWiroApiSecretChange,
+    testState,
+    onBack,
+    onTest,
+    onSkip,
+  } = props;
   const needKey = selected !== 'none';
+  const needsWiroSecret = selected === 'wiro' && wiroAuthMode === 'signature';
+  const canTest = Boolean(apiKey.trim()) && (!needsWiroSecret || Boolean(wiroApiSecret.trim()));
 
   return (
     <div className="flex flex-1 flex-col">
@@ -613,6 +672,38 @@ function ImageGenStep(props: {
 
       {needKey && (
         <div className="mt-5 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+          {selected === 'wiro' && (
+            <div className="mb-4">
+              <span className="mb-2 block text-[11px] font-medium uppercase tracking-wider text-zinc-500">
+                Authentication
+              </span>
+              <div className="grid grid-cols-2 gap-2 rounded-xl bg-zinc-100 p-1">
+                {([
+                  ['signature', 'Key + secret'],
+                  ['api-key-only', 'API key only'],
+                ] as const).map(([mode, label]) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => onWiroAuthModeChange(mode)}
+                    className={cn(
+                      'rounded-lg px-2 py-2 text-xs font-medium transition-colors',
+                      wiroAuthMode === mode
+                        ? 'bg-white text-zinc-900 shadow-sm'
+                        : 'text-zinc-500 hover:text-zinc-800'
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+                {wiroAuthMode === 'signature'
+                  ? 'Recommended. Avalon signs every request; your secret is never sent to Wiro.'
+                  : 'Use this only for a project created with API Key Only authentication.'}
+              </p>
+            </div>
+          )}
           <div className="mb-2 flex items-center justify-between">
             <label className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">
               {IMAGE_GEN_PROVIDERS[selected as Exclude<ImageGenProvider, 'none'>].name} API Key
@@ -648,6 +739,30 @@ function ImageGenStep(props: {
               {testState === 'error' && <X className="h-4 w-4 text-red-500" />}
             </span>
           </div>
+          {needsWiroSecret && (
+            <div className="mt-4">
+              <label className="mb-2 block text-[11px] font-medium uppercase tracking-wider text-zinc-500">
+                Wiro API Secret
+              </label>
+              <div className="relative">
+                <ShieldCheck className="pointer-events-none absolute left-0 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                <input
+                  type="password"
+                  value={wiroApiSecret}
+                  onChange={(e) => onWiroApiSecretChange(e.target.value)}
+                  placeholder="Wiro project API secret"
+                  className={cn(
+                    'w-full border-0 border-b-2 bg-transparent py-2 pl-7 pr-8 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none transition-colors',
+                    testState === 'error'
+                      ? 'border-red-400 focus:border-red-500'
+                      : testState === 'success'
+                      ? 'border-emerald-400 focus:border-emerald-500'
+                      : 'border-zinc-200 focus:border-zinc-900'
+                  )}
+                />
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -655,7 +770,7 @@ function ImageGenStep(props: {
         {needKey ? (
           <Button
             onClick={onTest}
-            disabled={!apiKey.trim() || testState === 'testing'}
+            disabled={!canTest || testState === 'testing'}
             className="h-12 w-full rounded-full bg-zinc-900 text-sm font-medium text-white shadow-sm hover:bg-zinc-800"
           >
             {testState === 'testing' ? (

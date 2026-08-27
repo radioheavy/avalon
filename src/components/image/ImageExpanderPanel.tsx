@@ -109,6 +109,11 @@ export function ImageExpanderPanel() {
     return sessionStorage.getItem('avalon-image-gen-api-key') || '';
   };
 
+  const getWiroApiSecret = () => {
+    if (typeof window === 'undefined') return '';
+    return sessionStorage.getItem('avalon-wiro-api-secret') || '';
+  };
+
   // Get current image gen provider
   const currentImageGen = typeof window !== 'undefined'
     ? localStorage.getItem('avalon-image-gen-provider') || 'none'
@@ -142,6 +147,7 @@ export function ImageExpanderPanel() {
         // Use Wiro.ai
         result = await generateWiroImage({
           apiKey,
+          apiSecret: getWiroApiSecret() || undefined,
           model: selectedWiroModel,
           prompt: promptToUse,
           negativePrompt: expandedImagePrompt?.negative_guidance,

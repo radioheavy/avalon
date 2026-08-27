@@ -137,6 +137,11 @@ export function ReverseEngineerPanel({ onClose }: ReverseEngineerPanelProps) {
     return sessionStorage.getItem('avalon-image-gen-api-key') || '';
   };
 
+  const getWiroApiSecret = () => {
+    if (typeof window === 'undefined') return '';
+    return sessionStorage.getItem('avalon-wiro-api-secret') || '';
+  };
+
   const currentImageGen = typeof window !== 'undefined'
     ? localStorage.getItem('avalon-image-gen-provider') || 'none'
     : 'none';
@@ -256,6 +261,7 @@ export function ReverseEngineerPanel({ onClose }: ReverseEngineerPanelProps) {
         // Use Wiro.ai
         result = await generateWiroImage({
           apiKey,
+          apiSecret: getWiroApiSecret() || undefined,
           model: selectedWiroModel,
           prompt: promptToUse,
           negativePrompt: reversedPrompt?.negative_guidance,

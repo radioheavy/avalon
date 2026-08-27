@@ -1,6 +1,6 @@
 // Wiro.ai API Client
-// Uses "API Key Only (Simple)" authentication - just x-api-key header
-// Based on official Wiro documentation
+// Supports both official auth modes: API Key Only and HMAC-SHA256 Signature.
+// Based on official Wiro documentation and the official Wiro MCP client.
 
 export interface WiroModel {
   id: string;
@@ -10,12 +10,20 @@ export interface WiroModel {
 
 export interface WiroGenerateRequest {
   apiKey: string;
+  apiSecret?: string;
   model: string;
   prompt: string;
   negativePrompt?: string;
   resolution?: '1K' | '2K' | '4K';
   aspectRatio?: string;
   inputImages?: string[]; // URLs
+}
+
+export type WiroAuthMode = 'signature' | 'api-key-only';
+
+export interface WiroCredentials {
+  apiKey: string;
+  apiSecret?: string;
 }
 
 export interface WiroGenerateResponse {
@@ -70,7 +78,59 @@ export const WIRO_ASPECT_RATIOS = [
 // Completed: task_postprocess_end, task_cancel
 // Running: task_queue, task_accept, task_assign, task_preprocess_start, task_preprocess_end, task_start, task_output
 
-// Generate image using Wiro.ai API (API Key Only mode)
+function bytesToHex(bytes: ArrayBuffer): string {
+  return Array.from(new Uint8Array(bytes))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+// Signature = HMAC-SHA256(key=API_KEY, message=API_SECRET + NONCE).
+// A fresh millisecond timestamp is used for every request to prevent replay.
+export async function createWiroAuthHeaders(
+  credentials: WiroCredentials
+): Promise<Record<string, string>> {
+  const apiKey = credentials.apiKey.trim();
+  const apiSecret = credentials.apiSecret?.trim();
+  const headers: Record<string, string> = { 'x-api-key': apiKey };
+
+  if (!apiSecret) return headers;
+
+  const nonce = Date.now().toString();
+  const encoder = new TextEncoder();
+  const signingKey = await globalThis.crypto.subtle.importKey(
+    'raw',
+    encoder.encode(apiKey),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const signature = await globalThis.crypto.subtle.sign(
+    'HMAC',
+    signingKey,
+    encoder.encode(apiSecret + nonce)
+  );
+
+  headers['x-nonce'] = nonce;
+  headers['x-signature'] = bytesToHex(signature);
+  return headers;
+}
+
+// Validates credentials without starting a billable generation. An unknown task
+// still passes authentication; Wiro documents 401/403 as credential failures.
+export async function testWiroCredentials(credentials: WiroCredentials): Promise<boolean> {
+  const response = await fetch('https://api.wiro.ai/v1/Task/Detail', {
+    method: 'POST',
+    headers: {
+      ...(await createWiroAuthHeaders(credentials)),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ taskid: 'avalon-credential-check' }),
+  });
+
+  return response.status !== 401 && response.status !== 403;
+}
+
+// Generate image using either Wiro.ai authentication mode.
 export async function generateWiroImage(request: WiroGenerateRequest): Promise<WiroGenerateResponse> {
   try {
     // Build form data
@@ -100,10 +160,7 @@ export async function generateWiroImage(request: WiroGenerateRequest): Promise<W
 
     const response = await fetch(`https://api.wiro.ai/v1/Run/${request.model}`, {
       method: 'POST',
-      headers: {
-        'x-api-key': request.apiKey,
-        // API Key Only mode - no x-nonce or x-signature needed
-      },
+      headers: await createWiroAuthHeaders(request),
       body: formData,
     });
 
@@ -138,7 +195,7 @@ export async function generateWiroImage(request: WiroGenerateRequest): Promise<W
     if (data.result && data.taskid) {
       console.log('[Wiro] Task created:', data.taskid);
       // Poll for results
-      return await pollWiroTask(request.apiKey, data.taskid);
+      return await pollWiroTask(request, data.taskid);
     }
 
     return { success: false, error: 'Beklenmeyen yanit formati - taskid bulunamadi' };
@@ -155,7 +212,7 @@ export async function generateWiroImage(request: WiroGenerateRequest): Promise<W
 // Status flow: task_queue -> task_accept -> task_assign -> task_preprocess_start ->
 //              task_preprocess_end -> task_start -> task_output -> task_postprocess_end (DONE!)
 async function pollWiroTask(
-  apiKey: string,
+  credentials: WiroCredentials,
   taskId: string,
   maxAttempts: number = 150, // 5 minutes max (150 * 2s)
   intervalMs: number = 2000
@@ -167,7 +224,7 @@ async function pollWiroTask(
       const response = await fetch('https://api.wiro.ai/v1/Task/Detail', {
         method: 'POST',
         headers: {
-          'x-api-key': apiKey,
+          ...(await createWiroAuthHeaders(credentials)),
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ taskid: taskId }),
