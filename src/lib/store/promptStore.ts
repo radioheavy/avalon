@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 import { Prompt, JsonObject, JsonValue } from '@/types/prompt';
-import { ExpandedImagePrompt } from '@/types/image-generation';
 import { setValueAtPath, deleteValueAtPath } from '@/lib/json/updater';
 
 interface PromptStore {
@@ -18,11 +17,6 @@ interface PromptStore {
   // AI state
   isAILoading: boolean;
   aiError: string | null;
-
-  // Image Expansion state
-  expandedImagePrompt: ExpandedImagePrompt | null;
-  isExpandingImage: boolean;
-  expandImageError: string | null;
 
   // Actions - Prompts
   createPrompt: (name: string, content?: JsonObject) => string;
@@ -48,12 +42,6 @@ interface PromptStore {
   setAILoading: (loading: boolean) => void;
   setAIError: (error: string | null) => void;
 
-  // Actions - Image Expansion
-  setExpandedImagePrompt: (prompt: ExpandedImagePrompt | null) => void;
-  setIsExpandingImage: (loading: boolean) => void;
-  setExpandImageError: (error: string | null) => void;
-  clearExpandedImagePrompt: () => void;
-  saveExpandedAsPrompt: (name: string) => string | null;
 }
 
 export const usePromptStore = create<PromptStore>()(
@@ -67,11 +55,6 @@ export const usePromptStore = create<PromptStore>()(
       expandedPaths: [],
       isAILoading: false,
       aiError: null,
-
-      // Image Expansion initial state
-      expandedImagePrompt: null,
-      isExpandingImage: false,
-      expandImageError: null,
 
       // Prompt actions
       createPrompt: (name, content = {}) => {
@@ -198,30 +181,6 @@ export const usePromptStore = create<PromptStore>()(
       setAILoading: (loading) => set({ isAILoading: loading }),
       setAIError: (error) => set({ aiError: error }),
 
-      // Image Expansion actions
-      setExpandedImagePrompt: (prompt) => set({ expandedImagePrompt: prompt }),
-      setIsExpandingImage: (loading) => set({ isExpandingImage: loading }),
-      setExpandImageError: (error) => set({ expandImageError: error }),
-      clearExpandedImagePrompt: () => set({ expandedImagePrompt: null, expandImageError: null }),
-      saveExpandedAsPrompt: (name) => {
-        const state = get();
-        if (!state.expandedImagePrompt) return null;
-
-        const id = uuidv4();
-        const newPrompt: Prompt = {
-          id,
-          name,
-          content: state.expandedImagePrompt as unknown as JsonObject,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        set((s) => ({
-          prompts: [...s.prompts, newPrompt],
-          currentPromptId: id,
-          expandedImagePrompt: null,
-        }));
-        return id;
-      },
     }),
     {
       name: 'avalon-storage',

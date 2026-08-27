@@ -417,7 +417,7 @@ function PreviewSurface({ value }: { value: JsonValue }) {
               <p className="text-sm font-semibold text-zinc-950">{humanize(key)}</p>
               <p className="mt-1 text-xs text-zinc-400">{Array.isArray(item) ? 'Collection' : typeof item}</p>
             </div>
-            <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-6 text-zinc-600">{typeof item === 'object' ? JSON.stringify(item, null, 2) : String(item)}</pre>
+            <pre data-testid="preview-value" className="whitespace-pre-wrap break-words font-sans text-sm leading-6 text-zinc-600">{typeof item === 'object' ? JSON.stringify(item, null, 2) : String(item)}</pre>
           </div>
         ))}
       </div>
@@ -456,8 +456,16 @@ function DocumentCanvas({
   };
 
   return (
-    <main data-testid="document-canvas" className="flex h-full min-h-0 flex-col bg-white">
-      <div className="flex min-h-16 shrink-0 flex-col gap-3 border-b border-zinc-200 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+    <main data-testid="document-canvas" className="h-full min-h-0 min-w-0 bg-zinc-50">
+      <div className={view === 'image' ? 'h-full' : 'hidden'}>
+        <ImageExpanderPanel
+          prompt={prompt}
+          activePath={activePath}
+          onReturn={() => onViewChange('editor')}
+        />
+      </div>
+      <div className={view === 'image' ? 'hidden' : 'flex h-full min-h-0 flex-col bg-white'}>
+        <div className="flex min-h-16 shrink-0 flex-col gap-3 border-b border-zinc-200 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <span className="text-zinc-900"><SectionIcon name={sectionName} size={22} /></span>
           <div>
@@ -484,9 +492,9 @@ function DocumentCanvas({
             </button>
           ))}
         </div>
-      </div>
+        </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto">
         {view === 'editor' && sectionValue !== undefined && <StructuredFields value={sectionValue} path={activePath} />}
         {view === 'preview' && sectionValue !== undefined && <PreviewSurface value={sectionValue} />}
         {view === 'raw' && (
@@ -504,14 +512,12 @@ function DocumentCanvas({
             </div>
           </div>
         )}
-        {view === 'image' && <ImageExpanderPanel />}
-      </div>
-      {view !== 'image' && (
+        </div>
         <div className="flex h-9 shrink-0 items-center justify-between border-t border-zinc-200 bg-zinc-50 px-4 text-[11px] text-zinc-500">
           <span>{displayPath(activePath)}</span>
           <span className="flex items-center gap-1.5 text-emerald-700"><CheckCircle size={13} weight="fill" /> Valid JSON</span>
         </div>
-      )}
+      </div>
     </main>
   );
 }
@@ -699,9 +705,21 @@ export function EditorWorkspace({ prompt, onBack }: { prompt: Prompt; onBack: ()
   const selectSection = (path: string[]) => {
     setActivePath(path);
     setSelectedPath(path);
-    setView('editor');
+    if (view !== 'image') setView('editor');
     setCompactPane('document');
   };
+
+  const compactTabs = view === 'image'
+    ? ([
+        ['map', 'Prompt map', MapTrifold],
+        ['document', 'Image studio', ImageSquare],
+      ] as const)
+    : ([
+        ['map', 'Prompt map', MapTrifold],
+        ['document', 'Document', ClipboardText],
+        ['enhance', 'Enhance', ChatTeardropText],
+        ['image', 'Studio', ImageSquare],
+      ] as const);
 
   const copyJSON = async () => {
     try {
@@ -736,18 +754,31 @@ export function EditorWorkspace({ prompt, onBack }: { prompt: Prompt; onBack: ()
         <div className="hidden items-center gap-1.5 sm:flex">
           <button type="button" onClick={copyJSON} className="inline-flex h-9 items-center gap-2 rounded-full px-3 text-xs font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950">{copied ? <Check size={16} /> : <Copy size={16} />}{copied ? 'Copied' : 'Copy JSON'}</button>
           <button type="button" onClick={exportJSON} className="inline-flex h-9 items-center gap-2 rounded-full px-3 text-xs font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950"><DownloadSimple size={16} /> Export</button>
-          <button type="button" onClick={() => { setView('image'); setCompactPane('document'); }} className="inline-flex h-9 items-center gap-2 rounded-full bg-violet-600 px-3 text-xs font-medium text-white shadow-sm hover:bg-violet-700"><ImageSquare size={16} /> Generate image</button>
+          <button type="button" onClick={() => { setView(view === 'image' ? 'editor' : 'image'); setCompactPane('document'); }} className="inline-flex h-9 items-center gap-2 rounded-full bg-violet-600 px-3 text-xs font-medium text-white shadow-sm hover:bg-violet-700">
+            {view === 'image' ? <ArrowLeft size={16} /> : <ImageSquare size={16} />}
+            {view === 'image' ? 'Back to editor' : 'Generate image'}
+          </button>
           <span className="rounded-full bg-zinc-100 px-3 py-2 text-xs font-medium text-zinc-600">{providerNames[currentProvider]}</span>
         </div>
       </header>
 
-      <div className="grid h-11 shrink-0 grid-cols-3 border-b border-zinc-200 bg-white xl:hidden" role="tablist" aria-label="Editor panes">
-        {([
-          ['map', 'Prompt map', MapTrifold],
-          ['document', 'Document', ClipboardText],
-          ['enhance', 'Enhance', ChatTeardropText],
-        ] as const).map(([pane, label, Icon]) => (
-          <button key={pane} type="button" role="tab" aria-selected={compactPane === pane} onClick={() => setCompactPane(pane)} className={`flex items-center justify-center gap-2 border-b-2 text-xs font-medium ${compactPane === pane ? 'border-violet-600 text-violet-700' : 'border-transparent text-zinc-500'}`}><Icon size={16} />{label}</button>
+      <div className={`grid h-11 shrink-0 ${view === 'image' ? 'grid-cols-2' : 'grid-cols-4'} border-b border-zinc-200 bg-white xl:hidden`} role="tablist" aria-label="Editor panes">
+        {compactTabs.map(([pane, label, Icon]) => (
+          <button
+            key={pane}
+            type="button"
+            role="tab"
+            aria-selected={pane === 'image' ? false : compactPane === pane}
+            onClick={() => {
+              if (pane === 'image') {
+                setView('image');
+                setCompactPane('document');
+              } else {
+                setCompactPane(pane);
+              }
+            }}
+            className={`flex items-center justify-center gap-1.5 border-b-2 text-[11px] font-medium sm:gap-2 sm:text-xs ${pane !== 'image' && compactPane === pane ? 'border-violet-600 text-violet-700' : 'border-transparent text-zinc-500'}`}
+          ><Icon size={16} />{label}</button>
         ))}
       </div>
 
@@ -755,10 +786,10 @@ export function EditorWorkspace({ prompt, onBack }: { prompt: Prompt; onBack: ()
         <div className={`${compactPane === 'map' ? 'flex' : 'hidden'} min-h-0 border-r border-zinc-200 xl:flex`}>
           <PromptMap prompt={prompt} activePath={effectivePath} onSelect={selectSection} />
         </div>
-        <div className={`${compactPane === 'document' ? 'flex' : 'hidden'} min-h-0 min-w-0 xl:flex`}>
+        <div className={`${compactPane === 'document' ? 'flex' : 'hidden'} min-h-0 min-w-0 xl:flex ${view === 'image' ? 'xl:col-span-2' : ''}`}>
           <DocumentCanvas prompt={prompt} activePath={effectivePath} view={view} onViewChange={setView} />
         </div>
-        <div className={`${compactPane === 'enhance' ? 'flex' : 'hidden'} min-h-0 border-l border-zinc-200 xl:flex`}>
+        <div className={view === 'image' ? 'hidden' : `${compactPane === 'enhance' ? 'flex' : 'hidden'} min-h-0 border-l border-zinc-200 xl:flex`}>
           <EnhancePanel prompt={prompt} />
         </div>
       </div>

@@ -102,7 +102,7 @@ test('desktop editor supports the core prompt workflow', async ({ page }) => {
   await expect(direction).toHaveValue('Directional north-window light with a soft silver bounce');
 
   await page.getByRole('tab', { name: 'Preview' }).click();
-  await expect(page.getByTestId('document-canvas').getByText('Directional north-window light with a soft silver bounce')).toBeVisible();
+  await expect(page.getByTestId('preview-value').filter({ hasText: 'Directional north-window light with a soft silver bounce' })).toBeVisible();
 
   await page.getByRole('tab', { name: 'Raw JSON' }).click();
   const rawEditor = page.getByLabel('Raw JSON editor');

@@ -1,923 +1,435 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { usePromptStore } from '@/lib/store/promptStore';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { useMemo, useState } from 'react';
 import {
-  ImageIcon,
-  Sparkles,
-  Loader2,
-  Copy,
-  Check,
-  ChevronDown,
-  ChevronRight,
-  Palette,
-  Camera,
-  Layers,
-  Type,
-  Settings,
-  AlertCircle,
-  Bot,
-  FileEdit,
-  Trash2,
-  Wand2,
-  Download,
-  ExternalLink,
-  Play,
-} from 'lucide-react';
+  ArrowLeft,
+  ArrowSquareOut,
+  CheckCircle,
+  DownloadSimple,
+  FileText,
+  ImageSquare,
+  MagicWand,
+  SlidersHorizontal,
+  SpinnerGap,
+  WarningCircle,
+} from '@phosphor-icons/react';
+import { Prompt, JsonValue } from '@/types/prompt';
 import { ExpandedImagePrompt } from '@/types/image-generation';
-import { FAL_POPULAR_MODELS, FAL_IMAGE_SIZES, generateImage, fetchFalModels, FalModel } from '@/lib/ai/fal-client';
-import { WIRO_POPULAR_MODELS, WIRO_ASPECT_RATIOS, generateWiroImage, fetchWiroModels, WiroModel } from '@/lib/ai/wiro-client';
+import { getValueAtPath } from '@/lib/json/updater';
+import {
+  FAL_IMAGE_SIZES,
+  FAL_POPULAR_MODELS,
+  FalModel,
+  fetchFalModels,
+  generateImage,
+} from '@/lib/ai/fal-client';
+import {
+  WIRO_ASPECT_RATIOS,
+  WIRO_POPULAR_MODELS,
+  WiroModel,
+  fetchWiroModels,
+  generateWiroImage,
+} from '@/lib/ai/wiro-client';
 
-export function ImageExpanderPanel() {
-  const {
-    expandedImagePrompt,
-    isExpandingImage,
-    expandImageError,
-    setExpandedImagePrompt,
-    setIsExpandingImage,
-    setExpandImageError,
-    clearExpandedImagePrompt,
-    saveExpandedAsPrompt,
-  } = usePromptStore();
+type SourceScope = 'document' | 'section';
 
-  const [input, setInput] = useState('');
-  const [copied, setCopied] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    subjects: true,
-    colors: true,
-    composition: true,
-    technical: false,
-  });
+type PreparedRecipe = {
+  signature: string;
+  value: ExpandedImagePrompt;
+};
 
-  // Image Generation states
-  const [selectedFalModel, setSelectedFalModel] = useState<string>('fal-ai/nano-banana-pro');
-  const [selectedWiroModel, setSelectedWiroModel] = useState<string>('google/nano-banana-pro');
-  const [selectedSize, setSelectedSize] = useState<string>('square_hd');
-  const [selectedAspectRatio, setSelectedAspectRatio] = useState<string>('1:1');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedImages, setGeneratedImages] = useState<{ url: string }[]>([]);
-  const [generateError, setGenerateError] = useState<string | null>(null);
-  const [useCustomPrompt, setUseCustomPrompt] = useState(false);
-  const [customPrompt, setCustomPrompt] = useState('');
-  const [showGenerator, setShowGenerator] = useState(false);
+type GenerationResult = {
+  signature: string;
+  images: { url: string }[];
+};
 
-  // Dynamic model lists
+interface ImageExpanderPanelProps {
+  prompt: Prompt;
+  activePath: string[];
+  onReturn: () => void;
+}
+
+function humanize(value: string) {
+  return value
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function flattenPrompt(value: JsonValue, path: string[] = []): string[] {
+  const label = path.map(humanize).join(' / ');
+
+  if (value === null || typeof value !== 'object') {
+    return [`${label || 'Value'}: ${String(value)}`];
+  }
+
+  if (Array.isArray(value)) {
+    if (value.every((item) => item === null || typeof item !== 'object')) {
+      return [`${label || 'Items'}: ${value.map(String).join('; ')}`];
+    }
+    return value.flatMap((item, index) => flattenPrompt(item, [...path, `item ${index + 1}`]));
+  }
+
+  return Object.entries(value).flatMap(([key, child]) => flattenPrompt(child, [...path, key]));
+}
+
+function findNegativeGuidance(value: JsonValue): string | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  if (Array.isArray(value)) {
+    for (const child of value) {
+      const match = findNegativeGuidance(child);
+      if (match) return match;
+    }
+    return undefined;
+  }
+
+  for (const [key, child] of Object.entries(value)) {
+    if (key.toLowerCase().replace(/[-\s]/g, '_').includes('negative')) {
+      return Array.isArray(child) ? child.map(String).join(', ') : String(child);
+    }
+    const match = findNegativeGuidance(child);
+    if (match) return match;
+  }
+  return undefined;
+}
+
+function sourceCount(value: JsonValue) {
+  return flattenPrompt(value).length;
+}
+
+export function ImageExpanderPanel({ prompt, activePath, onReturn }: ImageExpanderPanelProps) {
+  const [scope, setScope] = useState<SourceScope>('document');
+  const [instruction, setInstruction] = useState('');
+  const [prepared, setPrepared] = useState<PreparedRecipe | null>(null);
+  const [usePrepared, setUsePrepared] = useState(true);
+  const [isPreparing, setIsPreparing] = useState(false);
+  const [prepareError, setPrepareError] = useState<string | null>(null);
+  const [selectedFalModel, setSelectedFalModel] = useState('fal-ai/nano-banana-pro');
+  const [selectedWiroModel, setSelectedWiroModel] = useState('google/nano-banana-pro');
+  const [selectedSize, setSelectedSize] = useState('square_hd');
+  const [selectedAspectRatio, setSelectedAspectRatio] = useState('1:1');
   const [falModels, setFalModels] = useState<FalModel[]>(FAL_POPULAR_MODELS);
   const [wiroModels, setWiroModels] = useState<WiroModel[]>(WIRO_POPULAR_MODELS);
+  const [modelsLoaded, setModelsLoaded] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generation, setGeneration] = useState<GenerationResult | null>(null);
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
-  // Fetch models on mount
-  useEffect(() => {
-    const loadModels = async () => {
-      try {
-        const [fal, wiro] = await Promise.all([
-          fetchFalModels(),
-          fetchWiroModels(),
-        ]);
-        setFalModels(fal);
-        setWiroModels(wiro);
-      } catch {
-        // Keep fallback models
-      }
-    };
-    loadModels();
-  }, []);
-
-  // Get current AI provider and settings
   const currentProvider = typeof window !== 'undefined'
     ? localStorage.getItem('avalon-ai-provider') || 'anthropic'
     : 'anthropic';
-
-  const getApiKey = () => {
-    if (typeof window === 'undefined') return '';
-    return sessionStorage.getItem('avalon-api-key') || '';
-  };
-
-  const getSelectedModel = () => {
-    if (typeof window === 'undefined') return '';
-    return sessionStorage.getItem('avalon-ai-model') || '';
-  };
-
-  // Get image generation API key (works for both fal.ai and wiro.ai)
-  const getImageGenApiKey = () => {
-    if (typeof window === 'undefined') return '';
-    return sessionStorage.getItem('avalon-image-gen-api-key') || '';
-  };
-
-  const getWiroApiSecret = () => {
-    if (typeof window === 'undefined') return '';
-    return sessionStorage.getItem('avalon-wiro-api-secret') || '';
-  };
-
-  // Get current image gen provider
   const currentImageGen = typeof window !== 'undefined'
     ? localStorage.getItem('avalon-image-gen-provider') || 'none'
     : 'none';
 
-  // Handle image generation
-  const handleGenerate = async (promptOverride?: string) => {
+  const sectionValue = getValueAtPath(prompt.content, activePath);
+  const sourceValue = scope === 'section' && sectionValue !== undefined ? sectionValue : prompt.content;
+  const sourceText = useMemo(() => flattenPrompt(sourceValue).join('\n'), [sourceValue]);
+  const contextualPrompt = `${sourceText}${instruction.trim() ? `\n\nAdditional direction: ${instruction.trim()}` : ''}`;
+  const sourceIdentity = scope === 'section' ? activePath.join('/') : 'document';
+  const sourceSignature = `${prompt.id}:${scope}:${sourceIdentity}:${contextualPrompt}`;
+  const activePrepared = prepared?.signature === sourceSignature ? prepared.value : null;
+  const generatedImages = generation?.signature === sourceSignature ? generation.images : [];
+  const generationPrompt = activePrepared && usePrepared ? activePrepared.expanded_prompt : contextualPrompt;
+  const sourceLabel = scope === 'document'
+    ? prompt.name
+    : activePath.map(humanize).join(' / ') || prompt.name;
+
+  const loadModels = async () => {
+    if (modelsLoaded) return;
+    setModelsLoaded(true);
+    const [fal, wiro] = await Promise.all([fetchFalModels(), fetchWiroModels()]);
+    setFalModels(fal);
+    setWiroModels(wiro);
+  };
+
+  const getApiKey = () => typeof window === 'undefined'
+    ? ''
+    : sessionStorage.getItem('avalon-api-key') || '';
+  const getSelectedModel = () => typeof window === 'undefined'
+    ? ''
+    : sessionStorage.getItem('avalon-ai-model') || '';
+  const getImageGenApiKey = () => typeof window === 'undefined'
+    ? ''
+    : sessionStorage.getItem('avalon-image-gen-api-key') || '';
+  const getWiroApiSecret = () => typeof window === 'undefined'
+    ? ''
+    : sessionStorage.getItem('avalon-wiro-api-secret') || '';
+
+  const prepareWithAI = async () => {
+    if (!contextualPrompt.trim()) return;
+    const requestSignature = sourceSignature;
+    setIsPreparing(true);
+    setPrepareError(null);
+    try {
+      const response = await fetch('/api/image/expand', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: contextualPrompt,
+          provider: currentProvider,
+          model: getSelectedModel() || undefined,
+          apiKey: getApiKey() || undefined,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success || !data.expandedPrompt) {
+        throw new Error(data.error || 'The image recipe could not be prepared.');
+      }
+      setPrepared({ signature: requestSignature, value: data.expandedPrompt as ExpandedImagePrompt });
+      setUsePrepared(true);
+    } catch (error) {
+      setPrepareError(error instanceof Error ? error.message : 'The image recipe could not be prepared.');
+    } finally {
+      setIsPreparing(false);
+    }
+  };
+
+  const generate = async () => {
     const apiKey = getImageGenApiKey();
+    if (currentImageGen === 'none') {
+      setGenerateError('Choose fal.ai or Wiro.ai in Settings before generating.');
+      return;
+    }
     if (!apiKey) {
-      setGenerateError(`${currentImageGen === 'wiro' ? 'Wiro.ai' : 'fal.ai'} API key bulunamadi. Ayarlardan ekleyin.`);
+      setGenerateError(`${currentImageGen === 'wiro' ? 'Wiro.ai' : 'fal.ai'} API key is missing. Add it in Settings.`);
       return;
     }
 
-    const promptToUse = promptOverride ?? (useCustomPrompt
-      ? customPrompt
-      : expandedImagePrompt?.expanded_prompt || input);
-
-    if (!promptToUse.trim()) {
-      setGenerateError('Prompt gerekli');
-      return;
-    }
-
+    const requestSignature = sourceSignature;
     setIsGenerating(true);
     setGenerateError(null);
-    setGeneratedImages([]);
-
     try {
-      let result;
+      const negativePrompt = activePrepared?.negative_guidance || findNegativeGuidance(sourceValue);
+      const result = currentImageGen === 'wiro'
+        ? await generateWiroImage({
+            apiKey,
+            apiSecret: getWiroApiSecret() || undefined,
+            model: selectedWiroModel,
+            prompt: generationPrompt,
+            negativePrompt,
+            aspectRatio: selectedAspectRatio,
+            resolution: '1K',
+          })
+        : await generateImage({
+            apiKey,
+            model: selectedFalModel,
+            prompt: generationPrompt,
+            negativePrompt,
+            imageSize: selectedSize,
+            numImages: 1,
+          });
 
-      if (currentImageGen === 'wiro') {
-        // Use Wiro.ai
-        result = await generateWiroImage({
-          apiKey,
-          apiSecret: getWiroApiSecret() || undefined,
-          model: selectedWiroModel,
-          prompt: promptToUse,
-          negativePrompt: expandedImagePrompt?.negative_guidance,
-          aspectRatio: selectedAspectRatio,
-          resolution: '1K',
-        });
-      } else {
-        // Use fal.ai
-        result = await generateImage({
-          apiKey,
-          model: selectedFalModel,
-          prompt: promptToUse,
-          negativePrompt: expandedImagePrompt?.negative_guidance,
-          imageSize: selectedSize,
-          numImages: 1,
-        });
+      if (!result.success || !result.images?.length) {
+        throw new Error(result.error || 'The image could not be generated.');
       }
-
-      if (result.success && result.images) {
-        setGeneratedImages(result.images);
-      } else {
-        setGenerateError(result.error || 'Gorsel uretilemedi');
-      }
+      setGeneration({ signature: requestSignature, images: result.images });
     } catch (error) {
-      setGenerateError(error instanceof Error ? error.message : 'Bilinmeyen hata');
+      setGenerateError(error instanceof Error ? error.message : 'The image could not be generated.');
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const toggleSection = (section: string) => {
-    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
-  };
-
-  const handleExpand = async () => {
-    if (!input.trim()) return;
-
-    setIsExpandingImage(true);
-    setExpandImageError(null);
-    clearExpandedImagePrompt();
-
-    try {
-      const apiKey = getApiKey();
-      const model = getSelectedModel();
-
-      const response = await fetch('/api/image/expand', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: input,
-          provider: currentProvider,
-          model: model || undefined,
-          apiKey: apiKey || undefined,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('API request failed');
-      }
-
-      const data = await response.json();
-
-      if (data.success && data.expandedPrompt) {
-        setExpandedImagePrompt(data.expandedPrompt as ExpandedImagePrompt);
-      } else {
-        setExpandImageError(data.error || 'Failed to expand prompt');
-      }
-    } catch (error) {
-      setExpandImageError(error instanceof Error ? error.message : 'Unknown error');
-    } finally {
-      setIsExpandingImage(false);
-    }
-  };
-
-  const handleCopyJSON = () => {
-    if (expandedImagePrompt) {
-      navigator.clipboard.writeText(JSON.stringify(expandedImagePrompt, null, 2));
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  const handleSaveAsPrompt = () => {
-    const name = `Image: ${input.slice(0, 30)}${input.length > 30 ? '...' : ''}`;
-    saveExpandedAsPrompt(name);
-    setInput('');
-  };
-
-  const renderColorBox = (color: string, label: string) => (
-    <div className="flex items-center gap-2">
-      <div
-        className="w-6 h-6 rounded-lg border border-neutral-200 shadow-sm"
-        style={{ backgroundColor: color }}
-      />
-      <div>
-        <p className="text-xs text-neutral-500">{label}</p>
-        <code className="text-xs font-mono text-neutral-700">{color}</code>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="h-full flex flex-col bg-white">
-      {/* Header */}
-      <div className="h-12 px-4 border-b border-neutral-100 flex items-center gap-2 shrink-0">
-        <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-700 shadow-sm">
-          <ImageIcon className="h-4 w-4" />
+    <section data-testid="image-studio" className="flex h-full min-h-0 flex-col bg-zinc-50">
+      <header className="flex min-h-16 shrink-0 items-center gap-3 border-b border-zinc-200 bg-white px-5">
+        <button type="button" onClick={onReturn} className="inline-flex h-9 items-center gap-2 rounded-full px-3 text-xs font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 sm:hidden">
+          <ArrowLeft size={16} /> Back to editor
+        </button>
+        <div className="h-6 w-px bg-zinc-200 sm:hidden" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 text-violet-700 shadow-sm">
+          <ImageSquare size={19} />
         </div>
-        <span className="text-sm font-semibold text-zinc-900">Image studio</span>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-3 sm:p-4">
-        {/* Input Section */}
-        <div className="mb-4">
-          <p className="text-xs font-medium text-neutral-500 mb-2 uppercase tracking-wide">
-            Basit Prompt
-          </p>
-          <Textarea
-            placeholder="ornek: uzayda sorf yapan kedi"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey && !isExpandingImage) {
-                e.preventDefault();
-                handleExpand();
-              }
-            }}
-            disabled={isExpandingImage}
-            className="min-h-[100px] resize-none text-sm rounded-xl border-neutral-200 bg-neutral-50 focus:bg-white focus:border-pink-300 focus:ring-pink-100"
-          />
-          <Button
-            onClick={handleExpand}
-            disabled={!input.trim() || isExpandingImage}
-            className="mt-3 w-full rounded-full bg-zinc-950 text-white shadow-sm hover:bg-zinc-800"
-          >
-            {isExpandingImage ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Expanding...
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4 mr-2" />
-                Expand Prompt
-              </>
-            )}
-          </Button>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-sm font-semibold text-zinc-950">Image Studio</h2>
+          <p className="truncate text-xs text-zinc-500">Connected to {prompt.name}</p>
         </div>
+        <span className="hidden items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 sm:inline-flex">
+          <CheckCircle size={14} weight="fill" /> Live document
+        </span>
+      </header>
 
-        {/* Error */}
-        {expandImageError && (
-          <div className="p-4 mb-4 rounded-2xl bg-red-50 border border-red-100">
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
-                <AlertCircle className="h-4 w-4 text-red-600" />
-              </div>
-              <p className="text-sm text-red-600">{expandImageError}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Expanded Result */}
-        {expandedImagePrompt && (
-          <div className="space-y-3">
-            {/* Main Prompt */}
-            <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-              <p className="text-xs font-medium text-pink-600 mb-2 uppercase tracking-wide flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5" />
-                Expanded Prompt
-              </p>
-              <p className="text-sm text-neutral-700 leading-relaxed">
-                {expandedImagePrompt.expanded_prompt}
-              </p>
-            </div>
-
-            {/* Scene & Style */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-              <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-100">
-                <p className="text-xs text-neutral-500 mb-1">Scene</p>
-                <p className="text-sm text-neutral-700 font-medium">{expandedImagePrompt.scene}</p>
-              </div>
-              <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-100">
-                <p className="text-xs text-neutral-500 mb-1">Style</p>
-                <p className="text-sm text-neutral-700 font-medium">{expandedImagePrompt.style}</p>
-              </div>
-            </div>
-
-            {/* Lighting & Mood */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-              <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-100">
-                <p className="text-xs text-neutral-500 mb-1">Lighting</p>
-                <p className="text-sm text-neutral-700">{expandedImagePrompt.lighting}</p>
-              </div>
-              <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-100">
-                <p className="text-xs text-neutral-500 mb-1">Mood</p>
-                <p className="text-sm text-neutral-700">{expandedImagePrompt.mood}</p>
-              </div>
-            </div>
-
-            {/* Subjects */}
-            <div className="rounded-xl border border-neutral-100 overflow-hidden">
-              <button
-                onClick={() => toggleSection('subjects')}
-                className="w-full p-3 flex items-center justify-between bg-neutral-50 hover:bg-neutral-100 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <Layers className="h-4 w-4 text-violet-500" />
-                  <span className="text-sm font-medium text-neutral-700">
-                    Subjects ({expandedImagePrompt.subjects?.length || 0})
-                  </span>
+      <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_360px] lg:overflow-hidden">
+        <div className="min-h-0 overflow-y-auto p-4 sm:p-6">
+          <div className="mx-auto max-w-3xl space-y-5">
+            <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+              <div className="flex flex-col gap-3 border-b border-zinc-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-zinc-950"><FileText size={18} /> Live prompt source</div>
+                  <p className="mt-1 text-xs text-zinc-500">Edits in the document flow here automatically.</p>
                 </div>
-                {expandedSections.subjects ? (
-                  <ChevronDown className="h-4 w-4 text-neutral-400" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-neutral-400" />
-                )}
-              </button>
-              {expandedSections.subjects && expandedImagePrompt.subjects && (
-                <div className="p-3 space-y-2 bg-white">
-                  {expandedImagePrompt.subjects.map((subject, i) => (
-                    <div key={i} className="p-2.5 rounded-lg bg-violet-50 border border-violet-100">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-semibold text-violet-600 uppercase">{subject.type}</span>
-                        <span className="text-xs text-violet-400">• {subject.position}</span>
-                      </div>
-                      <p className="text-xs text-neutral-600">{subject.description}</p>
+                <div className="flex rounded-xl bg-zinc-100 p-1" role="tablist" aria-label="Image prompt source">
+                  {([
+                    ['document', 'Full prompt'],
+                    ['section', 'Current section'],
+                  ] as const).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      role="tab"
+                      aria-selected={scope === value}
+                      onClick={() => setScope(value)}
+                      className={`h-9 rounded-lg px-3 text-xs font-medium ${scope === value ? 'bg-white text-zinc-950 shadow-sm' : 'text-zinc-500 hover:text-zinc-900'}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="px-5 py-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-semibold text-violet-700">{sourceLabel}</p>
+                  <p className="text-[11px] text-zinc-400">{sourceCount(sourceValue)} values · {sourceText.length} characters</p>
+                </div>
+                <pre data-testid="image-source-preview" className="mt-3 max-h-64 overflow-y-auto whitespace-pre-wrap break-words rounded-xl border border-zinc-200 bg-zinc-50 p-4 font-sans text-sm leading-6 text-zinc-700">{sourceText}</pre>
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+              <label htmlFor="image-direction" className="text-sm font-semibold text-zinc-950">Optional direction</label>
+              <p className="mt-1 text-xs text-zinc-500">Add only what should change for this generation. The document remains the source.</p>
+              <textarea
+                id="image-direction"
+                value={instruction}
+                onChange={(event) => setInstruction(event.target.value)}
+                placeholder="e.g. Make this variation feel like late-afternoon film photography"
+                rows={3}
+                className="mt-3 w-full resize-none rounded-xl border border-zinc-200 px-4 py-3 text-sm leading-6 outline-none placeholder:text-zinc-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+              />
+              <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs text-zinc-400">No copy-paste required. Scope and direction are combined automatically.</p>
+                <button type="button" onClick={prepareWithAI} disabled={isPreparing} className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full border border-zinc-200 px-4 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50">
+                  {isPreparing ? <SpinnerGap size={17} className="animate-spin" /> : <MagicWand size={17} />}
+                  {isPreparing ? 'Preparing…' : 'Prepare with AI'}
+                </button>
+              </div>
+              {prepareError && <p role="alert" className="mt-3 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs text-red-700">{prepareError}</p>}
+            </section>
+
+            {activePrepared && (
+              <section className="rounded-2xl border border-violet-200 bg-white p-5 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-600">Prepared recipe</p>
+                    <h3 className="mt-1 text-sm font-semibold text-zinc-950">Ready for generation</h3>
+                  </div>
+                  <CheckCircle size={20} className="text-emerald-600" weight="fill" />
+                </div>
+                <p className="mt-4 text-sm leading-6 text-zinc-700">{activePrepared.expanded_prompt}</p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  {[
+                    ['Style', activePrepared.style],
+                    ['Lighting', activePrepared.lighting],
+                    ['Mood', activePrepared.mood],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-400">{label}</p>
+                      <p className="mt-1 text-xs leading-5 text-zinc-700">{value}</p>
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
-
-            {/* Color Palette */}
-            <div className="rounded-xl border border-neutral-100 overflow-hidden">
-              <button
-                onClick={() => toggleSection('colors')}
-                className="w-full p-3 flex items-center justify-between bg-neutral-50 hover:bg-neutral-100 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <Palette className="h-4 w-4 text-pink-500" />
-                  <span className="text-sm font-medium text-neutral-700">Color Palette</span>
-                </div>
-                {expandedSections.colors ? (
-                  <ChevronDown className="h-4 w-4 text-neutral-400" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-neutral-400" />
-                )}
-              </button>
-              {expandedSections.colors && expandedImagePrompt.color_palette && (
-                <div className="p-3 bg-white">
-                  <div className="flex flex-wrap gap-3 sm:gap-4 mb-3">
-                    {renderColorBox(expandedImagePrompt.color_palette.primary, 'Primary')}
-                    {renderColorBox(expandedImagePrompt.color_palette.secondary, 'Secondary')}
-                    {renderColorBox(expandedImagePrompt.color_palette.accent, 'Accent')}
-                  </div>
-                  <p className="text-xs text-neutral-500 italic">
-                    {expandedImagePrompt.color_palette.description}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Composition */}
-            <div className="rounded-xl border border-neutral-100 overflow-hidden">
-              <button
-                onClick={() => toggleSection('composition')}
-                className="w-full p-3 flex items-center justify-between bg-neutral-50 hover:bg-neutral-100 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <Camera className="h-4 w-4 text-sky-500" />
-                  <span className="text-sm font-medium text-neutral-700">Composition</span>
-                </div>
-                {expandedSections.composition ? (
-                  <ChevronDown className="h-4 w-4 text-neutral-400" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-neutral-400" />
-                )}
-              </button>
-              {expandedSections.composition && expandedImagePrompt.composition && (
-                <div className="p-3 bg-white flex flex-wrap gap-3">
-                  <div className="min-w-[80px]">
-                    <p className="text-xs text-neutral-500 mb-0.5">Framing</p>
-                    <p className="text-xs font-medium text-neutral-700">{expandedImagePrompt.composition.framing}</p>
-                  </div>
-                  <div className="min-w-[80px]">
-                    <p className="text-xs text-neutral-500 mb-0.5">Angle</p>
-                    <p className="text-xs font-medium text-neutral-700">{expandedImagePrompt.composition.angle}</p>
-                  </div>
-                  <div className="min-w-[80px]">
-                    <p className="text-xs text-neutral-500 mb-0.5">Focus</p>
-                    <p className="text-xs font-medium text-neutral-700">{expandedImagePrompt.composition.focus}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Text Elements */}
-            {expandedImagePrompt.text_elements && expandedImagePrompt.text_elements.length > 0 && (
-              <div className="p-3 rounded-xl bg-amber-50 border border-amber-100">
-                <div className="flex items-center gap-2 mb-2">
-                  <Type className="h-4 w-4 text-amber-600" />
-                  <span className="text-sm font-medium text-neutral-700">Text Elements</span>
-                </div>
-                {expandedImagePrompt.text_elements.map((text, i) => (
-                  <div key={i} className="p-2 rounded-lg bg-white border border-amber-200 mt-2">
-                    <code className="text-sm font-bold text-amber-700">&quot;{text.content}&quot;</code>
-                    <p className="text-xs text-neutral-500 mt-1">{text.style} • {text.placement}</p>
-                  </div>
-                ))}
-              </div>
+              </section>
             )}
+          </div>
+        </div>
 
-            {/* Technical Settings */}
-            <div className="rounded-xl border border-neutral-100 overflow-hidden">
-              <button
-                onClick={() => toggleSection('technical')}
-                className="w-full p-3 flex items-center justify-between bg-neutral-50 hover:bg-neutral-100 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <Settings className="h-4 w-4 text-neutral-500" />
-                  <span className="text-sm font-medium text-neutral-700">Technical Settings</span>
-                </div>
-                {expandedSections.technical ? (
-                  <ChevronDown className="h-4 w-4 text-neutral-400" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-neutral-400" />
-                )}
-              </button>
-              {expandedSections.technical && expandedImagePrompt.technical && (
-                <div className="p-3 bg-white flex flex-wrap gap-2 sm:gap-4">
-                  <div className="px-3 py-1.5 rounded-lg bg-neutral-100">
-                    <p className="text-xs text-neutral-500">Aspect</p>
-                    <p className="text-sm font-mono font-medium">{expandedImagePrompt.technical.aspect_ratio}</p>
-                  </div>
-                  <div className="px-3 py-1.5 rounded-lg bg-neutral-100">
-                    <p className="text-xs text-neutral-500">Resolution</p>
-                    <p className="text-sm font-mono font-medium">{expandedImagePrompt.technical.resolution}</p>
-                  </div>
-                  <div className="px-3 py-1.5 rounded-lg bg-neutral-100">
-                    <p className="text-xs text-neutral-500">Format</p>
-                    <p className="text-sm font-mono font-medium uppercase">{expandedImagePrompt.technical.output_format}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Negative Guidance */}
-            <div className="p-3 rounded-xl bg-red-50 border border-red-100">
-              <p className="text-xs font-medium text-red-600 mb-1">Negative Guidance</p>
-              <p className="text-xs text-neutral-600">{expandedImagePrompt.negative_guidance}</p>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-2 pt-2">
-              <div className="flex gap-2 flex-1">
-                <Button
-                  onClick={handleCopyJSON}
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 rounded-xl text-xs sm:text-sm"
-                >
-                  {copied ? (
-                    <>
-                      <Check className="h-4 w-4 mr-1 sm:mr-1.5 text-emerald-500" />
-                      <span className="hidden sm:inline">Copied!</span>
-                      <span className="sm:hidden">OK</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4 mr-1 sm:mr-1.5" />
-                      <span className="hidden sm:inline">Copy JSON</span>
-                      <span className="sm:hidden">Copy</span>
-                    </>
-                  )}
-                </Button>
-                <Button
-                  onClick={handleSaveAsPrompt}
-                  size="sm"
-                  className="flex-1 rounded-xl bg-violet-600 hover:bg-violet-700 text-xs sm:text-sm"
-                >
-                  <FileEdit className="h-4 w-4 mr-1 sm:mr-1.5" />
-                  <span className="hidden sm:inline">Edit as Prompt</span>
-                  <span className="sm:hidden">Edit</span>
-                </Button>
+        <aside className="min-h-0 border-t border-zinc-200 bg-white lg:overflow-y-auto lg:border-l lg:border-t-0">
+          <div className="border-b border-zinc-200 px-5 py-4">
+            <div className="flex items-center gap-2 text-sm font-semibold text-zinc-950"><SlidersHorizontal size={18} /> Generation setup</div>
+            <p className="mt-1 text-xs text-zinc-500">The active prompt stays attached through the whole run.</p>
+          </div>
+          <div className="space-y-6 p-5">
+            <section>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400">Provider</p>
+              <div className="mt-2 flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5">
+                <span className="text-sm font-medium text-zinc-800">{currentImageGen === 'wiro' ? 'Wiro.ai' : currentImageGen === 'fal' ? 'fal.ai' : 'Not configured'}</span>
+                <span className={`h-2 w-2 rounded-full ${currentImageGen === 'none' ? 'bg-amber-400' : 'bg-emerald-500'}`} />
               </div>
-              <Button
-                onClick={clearExpandedImagePrompt}
-                variant="ghost"
-                size="sm"
-                className="rounded-xl text-neutral-500 hover:text-red-500 sm:w-auto w-full"
-              >
-                <Trash2 className="h-4 w-4 mr-1 sm:mr-0" />
-                <span className="sm:hidden">Clear</span>
-              </Button>
-            </div>
+            </section>
 
-            {/* Image Generation Section - After Expand */}
             {currentImageGen !== 'none' && (
-              <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-700 shadow-sm">
-                      <Wand2 className="h-4 w-4" />
-                    </div>
-                    <span className="font-semibold text-neutral-800 text-sm">Image Create</span>
-                  </div>
-                  <span className="text-xs text-emerald-600 font-medium px-2 py-0.5 rounded-full bg-emerald-100">
-                    {currentImageGen === 'fal' ? 'fal.ai' : 'wiro.ai'}
-                  </span>
+              <section className="grid gap-4" onFocus={loadModels}>
+                <label className="text-xs font-medium text-zinc-600">
+                  Model
+                  <select
+                    aria-label="Image model"
+                    value={currentImageGen === 'wiro' ? selectedWiroModel : selectedFalModel}
+                    onChange={(event) => currentImageGen === 'wiro' ? setSelectedWiroModel(event.target.value) : setSelectedFalModel(event.target.value)}
+                    className="mt-2 h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-800 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                  >
+                    {(currentImageGen === 'wiro' ? wiroModels : falModels).map((model) => <option key={model.id} value={model.id}>{model.name}</option>)}
+                  </select>
+                </label>
+                <label className="text-xs font-medium text-zinc-600">
+                  {currentImageGen === 'wiro' ? 'Aspect ratio' : 'Output size'}
+                  <select
+                    aria-label={currentImageGen === 'wiro' ? 'Aspect ratio' : 'Output size'}
+                    value={currentImageGen === 'wiro' ? selectedAspectRatio : selectedSize}
+                    onChange={(event) => currentImageGen === 'wiro' ? setSelectedAspectRatio(event.target.value) : setSelectedSize(event.target.value)}
+                    className="mt-2 h-11 w-full rounded-xl border border-zinc-200 bg-white px-3 text-sm text-zinc-800 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                  >
+                    {(currentImageGen === 'wiro' ? WIRO_ASPECT_RATIOS : FAL_IMAGE_SIZES).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                </label>
+              </section>
+            )}
+
+            <section>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400">Prompt sent</p>
+              {activePrepared ? (
+                <div className="mt-2 grid grid-cols-2 rounded-xl bg-zinc-100 p-1" role="group" aria-label="Generation prompt version">
+                  <button type="button" onClick={() => setUsePrepared(true)} className={`h-9 rounded-lg text-xs font-medium ${usePrepared ? 'bg-white text-zinc-950 shadow-sm' : 'text-zinc-500'}`}>Prepared recipe</button>
+                  <button type="button" onClick={() => setUsePrepared(false)} className={`h-9 rounded-lg text-xs font-medium ${!usePrepared ? 'bg-white text-zinc-950 shadow-sm' : 'text-zinc-500'}`}>Live source</button>
                 </div>
-
-                {/* Model Selector */}
-                <div className="mb-3">
-                  <label className="text-xs font-medium text-neutral-500 mb-1.5 block">Model</label>
-                  {currentImageGen === 'wiro' ? (
-                    <select
-                      value={selectedWiroModel}
-                      onChange={(e) => setSelectedWiroModel(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-xl border border-emerald-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
-                    >
-                      {wiroModels.map((model) => (
-                        <option key={model.id} value={model.id}>
-                          {model.name}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <select
-                      value={selectedFalModel}
-                      onChange={(e) => setSelectedFalModel(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-xl border border-emerald-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
-                    >
-                      {falModels.map((model) => (
-                        <option key={model.id} value={model.id}>
-                          {model.name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
+              ) : (
+                <div className="mt-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-3">
+                  <p className="text-xs font-semibold text-violet-800">Live source</p>
+                  <p className="mt-1 text-xs leading-5 text-violet-700">{scope === 'document' ? 'The complete prompt document' : sourceLabel} will be sent automatically.</p>
                 </div>
+              )}
+            </section>
 
-                {/* Size/Aspect Ratio Selector */}
-                <div className="mb-3">
-                  <label className="text-xs font-medium text-neutral-500 mb-1.5 block">
-                    {currentImageGen === 'wiro' ? 'Aspect Ratio' : 'Size'}
-                  </label>
-                  {currentImageGen === 'wiro' ? (
-                    <select
-                      value={selectedAspectRatio}
-                      onChange={(e) => setSelectedAspectRatio(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-xl border border-emerald-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
-                    >
-                      {WIRO_ASPECT_RATIOS.map((ratio) => (
-                        <option key={ratio.value} value={ratio.value}>
-                          {ratio.label}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <select
-                      value={selectedSize}
-                      onChange={(e) => setSelectedSize(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-xl border border-emerald-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
-                    >
-                      {FAL_IMAGE_SIZES.map((size) => (
-                        <option key={size.value} value={size.value}>
-                          {size.label}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-
-                {/* Prompt Source Toggle */}
-                <div className="mb-3">
-                  <label className="text-xs font-medium text-neutral-500 mb-1.5 block">Prompt</label>
-                  <div className="flex gap-2 p-1 rounded-xl bg-emerald-100">
-                    <button
-                      onClick={() => setUseCustomPrompt(false)}
-                      className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                        !useCustomPrompt
-                          ? 'bg-white text-emerald-700 shadow-sm'
-                          : 'text-emerald-600 hover:bg-emerald-50'
-                      }`}
-                    >
-                      Expanded Prompt
-                    </button>
-                    <button
-                      onClick={() => setUseCustomPrompt(true)}
-                      className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                        useCustomPrompt
-                          ? 'bg-white text-emerald-700 shadow-sm'
-                          : 'text-emerald-600 hover:bg-emerald-50'
-                      }`}
-                    >
-                      Custom Prompt
-                    </button>
-                  </div>
-                </div>
-
-                {/* Custom Prompt Input */}
-                {useCustomPrompt && (
-                  <div className="mb-3">
-                    <Textarea
-                      placeholder="Kendi prompt'unu yaz..."
-                      value={customPrompt}
-                      onChange={(e) => setCustomPrompt(e.target.value)}
-                      className="min-h-[80px] resize-none text-sm rounded-xl border-emerald-200 bg-white focus:border-emerald-300 focus:ring-emerald-100"
-                    />
-                  </div>
-                )}
-
-                {/* Generate Error */}
-                {generateError && (
-                  <div className="mb-3 p-3 rounded-xl bg-red-50 border border-red-100">
-                    <p className="text-xs text-red-600 flex items-center gap-1.5">
-                      <AlertCircle className="h-3.5 w-3.5" />
-                      {generateError}
-                    </p>
-                  </div>
-                )}
-
-                {/* Generate Button */}
-                <Button
-                  onClick={() => handleGenerate()}
-                  disabled={isGenerating || (!useCustomPrompt && !expandedImagePrompt?.expanded_prompt) || (useCustomPrompt && !customPrompt.trim())}
-                  className="w-full rounded-full bg-zinc-950 text-white shadow-sm hover:bg-zinc-800"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Play className="h-4 w-4 mr-2" />
-                      Generate Image
-                    </>
-                  )}
-                </Button>
-
-                {/* Generated Images */}
-                {generatedImages.length > 0 && (
-                  <div className="mt-4 space-y-3">
-                    <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide">Generated</p>
-                    {generatedImages.map((img, i) => (
-                      <div key={i} className="relative group rounded-xl overflow-hidden border border-emerald-200">
-                        {/* Generated provider URLs can be data/blob URLs, so they intentionally bypass next/image. */}
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={img.url}
-                          alt={`Generated ${i + 1}`}
-                          className="w-full h-auto"
-                        />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                          <a
-                            href={img.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors"
-                          >
-                            <ExternalLink className="h-5 w-5" />
-                          </a>
-                          <a
-                            href={img.url}
-                            download={`generated-${Date.now()}.png`}
-                            className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors"
-                          >
-                            <Download className="h-5 w-5" />
-                          </a>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+            {generateError && (
+              <div role="alert" className="flex gap-2 rounded-xl border border-red-100 bg-red-50 p-3 text-xs leading-5 text-red-700">
+                <WarningCircle size={17} className="mt-0.5 shrink-0" /> {generateError}
               </div>
             )}
-          </div>
-        )}
 
-        {/* Empty state */}
-        {!expandedImagePrompt && !isExpandingImage && !expandImageError && (
-          <div className="text-center py-8">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-400 shadow-sm">
-              <ImageIcon className="h-7 w-7" />
-            </div>
-            <p className="font-medium text-neutral-800 mb-1">Prompt Expander</p>
-            <p className="text-sm text-neutral-500 max-w-[200px] mx-auto">
-              Basit bir prompt yaz, AI zengin bir gorsel prompt&apos;a donustursun
-            </p>
-          </div>
-        )}
-
-        {/* Quick Generate - without expansion */}
-        {!expandedImagePrompt && currentImageGen !== 'none' && (
-          <div className="mt-4">
-            <button
-              onClick={() => setShowGenerator(!showGenerator)}
-              className="w-full flex items-center justify-between p-3 rounded-xl bg-neutral-50 hover:bg-neutral-100 border border-neutral-200 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 shadow-sm">
-                  <Wand2 className="h-3.5 w-3.5" />
-                </div>
-                <span className="text-sm font-medium text-neutral-700">Quick Generate</span>
-              </div>
-              {showGenerator ? (
-                <ChevronDown className="h-4 w-4 text-neutral-400" />
-              ) : (
-                <ChevronRight className="h-4 w-4 text-neutral-400" />
-              )}
+            <button type="button" onClick={generate} disabled={isGenerating || !generationPrompt.trim()} className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-violet-600 text-sm font-medium text-white shadow-sm hover:bg-violet-700 disabled:opacity-40">
+              {isGenerating ? <SpinnerGap size={18} className="animate-spin" /> : <ImageSquare size={18} />}
+              {isGenerating ? 'Generating…' : activePrepared && usePrepared ? 'Generate prepared image' : 'Generate from live prompt'}
             </button>
 
-            {showGenerator && (
-              <div className="mt-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                <p className="text-xs text-neutral-500 mb-3">
-                  Expand&apos;e gerek kalmadan direkt gorsel uret
-                </p>
-
-                {/* Model Selector */}
-                <div className="mb-3">
-                  <label className="text-xs font-medium text-neutral-500 mb-1.5 block">Model</label>
-                  {currentImageGen === 'wiro' ? (
-                    <select
-                      value={selectedWiroModel}
-                      onChange={(e) => setSelectedWiroModel(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-xl border border-emerald-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
-                    >
-                      {wiroModels.map((model) => (
-                        <option key={model.id} value={model.id}>
-                          {model.name}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <select
-                      value={selectedFalModel}
-                      onChange={(e) => setSelectedFalModel(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-xl border border-emerald-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
-                    >
-                      {falModels.map((model) => (
-                        <option key={model.id} value={model.id}>
-                          {model.name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-
-                {/* Size/Aspect Ratio Selector */}
-                <div className="mb-3">
-                  <label className="text-xs font-medium text-neutral-500 mb-1.5 block">
-                    {currentImageGen === 'wiro' ? 'Aspect Ratio' : 'Size'}
-                  </label>
-                  {currentImageGen === 'wiro' ? (
-                    <select
-                      value={selectedAspectRatio}
-                      onChange={(e) => setSelectedAspectRatio(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-xl border border-emerald-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
-                    >
-                      {WIRO_ASPECT_RATIOS.map((ratio) => (
-                        <option key={ratio.value} value={ratio.value}>
-                          {ratio.label}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <select
-                      value={selectedSize}
-                      onChange={(e) => setSelectedSize(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-xl border border-emerald-200 bg-white focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 outline-none"
-                    >
-                      {FAL_IMAGE_SIZES.map((size) => (
-                        <option key={size.value} value={size.value}>
-                          {size.label}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-
-                {/* Custom Prompt */}
-                <div className="mb-3">
-                  <label className="text-xs font-medium text-neutral-500 mb-1.5 block">Prompt</label>
-                  <Textarea
-                    placeholder="ornek: uzayda sorf yapan kedi"
-                    value={customPrompt}
-                    onChange={(e) => setCustomPrompt(e.target.value)}
-                    className="min-h-[80px] resize-none text-sm rounded-xl border-emerald-200 bg-white focus:border-emerald-300 focus:ring-emerald-100"
-                  />
-                </div>
-
-                {/* Generate Error */}
-                {generateError && (
-                  <div className="mb-3 p-3 rounded-xl bg-red-50 border border-red-100">
-                    <p className="text-xs text-red-600 flex items-center gap-1.5">
-                      <AlertCircle className="h-3.5 w-3.5" />
-                      {generateError}
-                    </p>
+            <section aria-live="polite" className="border-t border-zinc-200 pt-5">
+              {generatedImages.length ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-700">Generated output</p>
+                    <CheckCircle size={16} className="text-emerald-600" weight="fill" />
                   </div>
-                )}
-
-                {/* Generate Button */}
-                <Button
-                  onClick={() => {
-                    setUseCustomPrompt(true);
-                    handleGenerate(customPrompt);
-                  }}
-                  disabled={isGenerating || !customPrompt.trim()}
-                  className="w-full rounded-full bg-zinc-950 text-white shadow-sm hover:bg-zinc-800"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Play className="h-4 w-4 mr-2" />
-                      Generate
-                    </>
-                  )}
-                </Button>
-
-                {/* Generated Images */}
-                {generatedImages.length > 0 && (
-                  <div className="mt-4 space-y-3">
-                    <p className="text-xs font-medium text-emerald-600 uppercase tracking-wide">Generated</p>
-                    {generatedImages.map((img, i) => (
-                      <div key={i} className="relative group rounded-xl overflow-hidden border border-emerald-200">
-                        {/* Generated provider URLs can be data/blob URLs, so they intentionally bypass next/image. */}
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={img.url}
-                          alt={`Generated ${i + 1}`}
-                          className="w-full h-auto"
-                        />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                          <a
-                            href={img.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors"
-                          >
-                            <ExternalLink className="h-5 w-5" />
-                          </a>
-                          <a
-                            href={img.url}
-                            download={`generated-${Date.now()}.png`}
-                            className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors"
-                          >
-                            <Download className="h-5 w-5" />
-                          </a>
-                        </div>
+                  {generatedImages.map((image, index) => (
+                    <div key={`${image.url}-${index}`} className="overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50">
+                      {/* Generated provider URLs can be data/blob URLs, so they intentionally bypass next/image. */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={image.url} alt={`Generated result ${index + 1}`} className="aspect-square w-full object-cover" />
+                      <div className="flex gap-2 p-3">
+                        <a href={image.url} target="_blank" rel="noopener noreferrer" className="inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-full border border-zinc-200 bg-white text-xs font-medium text-zinc-700 hover:bg-zinc-50"><ArrowSquareOut size={15} /> Open</a>
+                        <a href={image.url} download={`${prompt.name.replace(/\s+/g, '-').toLowerCase()}-${index + 1}.png`} className="inline-flex h-9 flex-1 items-center justify-center gap-2 rounded-full border border-zinc-200 bg-white text-xs font-medium text-zinc-700 hover:bg-zinc-50"><DownloadSimple size={15} /> Download</a>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex min-h-48 flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-5 text-center">
+                  <ImageSquare size={28} className="text-zinc-300" />
+                  <p className="mt-3 text-sm font-semibold text-zinc-800">Output stays with this run</p>
+                  <p className="mt-1 text-xs leading-5 text-zinc-500">Generate directly or prepare the live prompt with AI first.</p>
+                </div>
+              )}
+            </section>
           </div>
-        )}
+        </aside>
       </div>
-
-      {/* Footer */}
-      <div className="px-3 sm:px-4 py-2 border-t border-neutral-100 bg-neutral-50/50">
-        <p className="text-[10px] sm:text-xs text-neutral-400 flex flex-wrap items-center gap-1 sm:gap-1.5">
-          <Bot className="h-3 w-3 shrink-0" />
-          <span>{currentProvider === 'openai' ? 'OpenAI' : currentProvider === 'google' ? 'Gemini' : 'Anthropic'}</span>
-          <span className="text-neutral-300">•</span>
-          <span>Nano Banana Pro</span>
-        </p>
-      </div>
-    </div>
+    </section>
   );
 }
