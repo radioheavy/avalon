@@ -85,7 +85,7 @@ test('desktop editor supports the core prompt workflow', async ({ page }) => {
   await expect(page.getByTestId('editor-workspace')).toBeVisible();
   await expect(page.getByTestId('prompt-map')).toBeVisible();
   await expect(page.getByTestId('document-canvas')).toBeVisible();
-  await expect(page.getByTestId('enhance-panel')).toBeVisible();
+  await expect(page.getByTestId('enhance-panel')).toBeHidden();
   await expect(page.getByRole('heading', { name: 'Cinematic Portrait' })).toBeVisible();
 
   await page.getByRole('button', { name: /Lighting/ }).click();
@@ -94,6 +94,9 @@ test('desktop editor supports the core prompt workflow', async ({ page }) => {
   const direction = page.getByTestId('document-canvas').locator('input').first();
   await expect(direction).toHaveValue('Soft diffused window light from camera left');
   await direction.fill('North-window light with a soft bounce');
+
+  await page.getByRole('tab', { name: /Refine/ }).click();
+  await expect(page.getByTestId('enhance-panel')).toBeVisible();
   await expect(page.getByTestId('enhance-panel')).toContainText('image_generation.lighting.direction');
 
   await page.getByRole('button', { name: 'Add useful visual detail' }).click();
@@ -104,7 +107,7 @@ test('desktop editor supports the core prompt workflow', async ({ page }) => {
   await page.getByRole('tab', { name: 'Preview' }).click();
   await expect(page.getByTestId('preview-value').filter({ hasText: 'Directional north-window light with a soft silver bounce' })).toBeVisible();
 
-  await page.getByRole('tab', { name: 'Raw JSON' }).click();
+  await page.getByLabel('More document views').selectOption('raw');
   const rawEditor = page.getByLabel('Raw JSON editor');
   await rawEditor.fill('{ invalid json');
   await page.getByRole('button', { name: 'Apply JSON' }).click();
@@ -114,7 +117,7 @@ test('desktop editor supports the core prompt workflow', async ({ page }) => {
   await page.getByRole('button', { name: 'Apply JSON' }).click();
   await expect(page.getByText('Edit the complete document. Changes are validated before saving.')).toBeVisible();
 
-  await page.getByRole('tab', { name: 'Editor' }).click();
+  await page.getByRole('tab', { name: 'Edit' }).click();
   await page.getByTestId('document-canvas').locator('input').first().focus();
   await page.getByRole('heading', { name: 'Lighting' }).click();
   await page.getByRole('button', { name: 'Add useful visual detail' }).click();
@@ -132,12 +135,12 @@ test('compact editor exposes each pane without duplicate mounts', async ({ page 
   await expect(page.getByTestId('prompt-map')).toBeHidden();
   await expect(page.getByTestId('enhance-panel')).toBeHidden();
 
-  await page.getByRole('tab', { name: 'Prompt map' }).click();
+  await page.getByRole('tab', { name: 'Sections' }).click();
   await expect(page.getByTestId('prompt-map')).toBeVisible();
   await page.getByRole('button', { name: /Lighting/ }).click();
   await expect(page.getByTestId('document-canvas')).toBeVisible();
 
-  await page.getByRole('tab', { name: 'Enhance' }).click();
+  await page.getByRole('tab', { name: /Refine/ }).click();
   await expect(page.getByTestId('enhance-panel')).toBeVisible();
   await expect(page.getByTestId('enhance-panel').getByText('image_generation.lighting', { exact: true })).toBeVisible();
 

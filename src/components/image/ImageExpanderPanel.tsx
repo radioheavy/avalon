@@ -233,7 +233,7 @@ export function ImageExpanderPanel({ prompt, activePath, onReturn }: ImageExpand
   return (
     <section data-testid="image-studio" className="flex h-full min-h-0 flex-col bg-zinc-50">
       <header className="flex min-h-16 shrink-0 items-center gap-3 border-b border-zinc-200 bg-white px-5">
-        <button type="button" onClick={onReturn} className="inline-flex h-9 items-center gap-2 rounded-full px-3 text-xs font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 sm:hidden">
+        <button type="button" onClick={onReturn} className="inline-flex h-9 items-center gap-2 rounded-full px-3 text-xs font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950">
           <ArrowLeft size={16} /> Back to editor
         </button>
         <div className="h-6 w-px bg-zinc-200 sm:hidden" />

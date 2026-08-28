@@ -10,14 +10,10 @@ import {
   Check,
   CheckCircle,
   ClipboardText,
-  Code,
   Copy,
   DownloadSimple,
   Eye,
   FilmStrip,
-  FileText,
-  Clock,
-  FlowArrow,
   FileCode,
   FrameCorners,
   ImageSquare,
@@ -49,6 +45,7 @@ import { getValueAtPath } from '@/lib/json/updater';
 import { JsonObject, JsonValue, Prompt } from '@/types/prompt';
 
 type WorkspaceView = 'editor' | 'brief' | 'structure' | 'timeline' | 'preview' | 'raw' | 'image' | 'video';
+type WorkspaceStep = 'build' | 'enhance' | 'generate';
 type CompactPane = 'map' | 'document' | 'enhance';
 
 type SectionEntry = {
@@ -486,14 +483,11 @@ function DocumentCanvas({
             <p className="text-xs text-zinc-500">{sectionDescription(sectionName)}</p>
           </div>
         </div>
-        <div className="flex items-center gap-1 rounded-xl bg-zinc-100 p-1" role="tablist" aria-label="Document view">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 rounded-xl bg-zinc-100 p-1" role="tablist" aria-label="Primary document view">
           {([
-            ['editor', 'Editor', ClipboardText],
-            ['brief', 'Brief', FileText],
-            ['structure', 'Structure', FlowArrow],
-            ['timeline', 'Timeline', Clock],
+            ['editor', 'Edit', ClipboardText],
             ['preview', 'Preview', Eye],
-            ['raw', 'Raw JSON', Code],
           ] as const).map(([value, label, Icon]) => (
             <button
               key={value}
@@ -507,6 +501,22 @@ function DocumentCanvas({
               {label}
             </button>
           ))}
+          </div>
+          <label className="relative">
+            <span className="sr-only">More document views</span>
+            <select
+              aria-label="More document views"
+              value={['brief', 'structure', 'timeline', 'raw'].includes(view) ? view : ''}
+              onChange={(event) => event.target.value && onViewChange(event.target.value as WorkspaceView)}
+              className="h-11 rounded-xl border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-600 outline-none hover:border-zinc-300 focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+            >
+              <option value="">More views</option>
+              <option value="brief">Source brief</option>
+              <option value="structure">Structure</option>
+              <option value="timeline">Timeline</option>
+              <option value="raw">Raw JSON</option>
+            </select>
+          </label>
         </div>
         </div>
 
@@ -537,6 +547,57 @@ function DocumentCanvas({
           <span className="flex items-center gap-1.5 text-emerald-700"><CheckCircle size={13} weight="fill" /> Valid JSON</span>
         </div>
       </div>}
+    </main>
+  );
+}
+
+function GenerationChooser({
+  prompt,
+  onChoose,
+}: {
+  prompt: Prompt;
+  onChoose: (view: 'image' | 'video') => void;
+}) {
+  return (
+    <main className="flex h-full min-h-0 flex-1 overflow-y-auto bg-zinc-50 px-5 py-8 sm:px-8 sm:py-12">
+      <div className="mx-auto w-full max-w-4xl">
+        <div className="max-w-2xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-700">Step 3 · Generate</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-950">Turn the prompt into an output</h2>
+          <p className="mt-3 text-sm leading-6 text-zinc-600">
+            Your structured prompt is ready. Choose the kind of output you want to create; Avalon will carry the current document into the right studio.
+          </p>
+        </div>
+
+        <div className="mt-8 grid gap-4 md:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => onChoose('image')}
+            className="group rounded-3xl border border-zinc-200 bg-white p-6 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-lg hover:shadow-zinc-900/[0.05] focus-visible:ring-2 focus-visible:ring-violet-500"
+          >
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-700"><ImageSquare size={24} /></span>
+            <h3 className="mt-6 text-xl font-semibold text-zinc-950">Generate image</h3>
+            <p className="mt-2 text-sm leading-6 text-zinc-500">Prepare the live prompt, tune the recipe, and create still images with your connected provider.</p>
+            <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-violet-700">Open Image Studio <ArrowLeft size={16} className="rotate-180 transition-transform group-hover:translate-x-1" /></span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onChoose('video')}
+            className="group rounded-3xl border border-zinc-200 bg-white p-6 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-lg hover:shadow-zinc-900/[0.05] focus-visible:ring-2 focus-visible:ring-cyan-500"
+          >
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-700"><FilmStrip size={24} /></span>
+            <h3 className="mt-6 text-xl font-semibold text-zinc-950">Create video</h3>
+            <p className="mt-2 text-sm leading-6 text-zinc-500">Use the brief and timeline to direct scenes, generate takes, and maintain visual continuity.</p>
+            <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-cyan-700">Open Video Studio <ArrowLeft size={16} className="rotate-180 transition-transform group-hover:translate-x-1" /></span>
+          </button>
+        </div>
+
+        <div className="mt-6 flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-xs text-zinc-500">
+          <CheckCircle size={16} className="shrink-0 text-emerald-600" weight="fill" />
+          Connected to <span className="font-semibold text-zinc-800">{prompt.name}</span>. Changes made in Build remain connected to both studios.
+        </div>
+      </div>
     </main>
   );
 }
@@ -714,6 +775,7 @@ export function EditorWorkspace({ prompt, onBack }: { prompt: Prompt; onBack: ()
   const sections = useMemo(() => getSectionEntries(prompt.content), [prompt.content]);
   const [activePath, setActivePath] = useState<string[]>(sections[0]?.path || []);
   const [view, setView] = useState<WorkspaceView>('editor');
+  const [step, setStep] = useState<WorkspaceStep>('build');
   const [compactPane, setCompactPane] = useState<CompactPane>('document');
   const [copied, setCopied] = useState(false);
   const currentProvider = typeof window !== 'undefined' ? localStorage.getItem('avalon-ai-provider') || 'anthropic' : 'anthropic';
@@ -728,22 +790,38 @@ export function EditorWorkspace({ prompt, onBack }: { prompt: Prompt; onBack: ()
     setCompactPane('document');
   };
 
-  const compactTabs = view === 'image'
+  const openStep = (nextStep: WorkspaceStep) => {
+    setStep(nextStep);
+    if (nextStep !== 'generate' && (view === 'image' || view === 'video')) setView('editor');
+    if (nextStep === 'build') setCompactPane('document');
+    if (nextStep === 'enhance') {
+      setView('editor');
+      setCompactPane('enhance');
+      if (!selectedPath && effectivePath.length) setSelectedPath(effectivePath);
+    }
+    if (nextStep === 'generate' && view !== 'image' && view !== 'video') setCompactPane('document');
+  };
+
+  const changeView = (nextView: WorkspaceView) => {
+    const leavingStudio = (view === 'image' || view === 'video') && nextView !== 'image' && nextView !== 'video';
+    setView(nextView);
+    if (nextView === 'image' || nextView === 'video') setStep('generate');
+    else if (leavingStudio) setStep('build');
+  };
+
+  const compactTabs = step === 'generate' && view === 'image'
     ? ([
-        ['map', 'Prompt map', MapTrifold],
+        ['map', 'Sections', MapTrifold],
         ['document', 'Image studio', ImageSquare],
       ] as const)
-    : view === 'video'
+    : step === 'enhance'
       ? ([
-          ['map', 'Prompt map', MapTrifold],
-          ['document', 'Video studio', FilmStrip],
-        ] as const)
-      : ([
-        ['map', 'Prompt map', MapTrifold],
         ['document', 'Document', ClipboardText],
         ['enhance', 'Enhance', ChatTeardropText],
-        ['image', 'Studio', ImageSquare],
-        ['video', 'Video', FilmStrip],
+      ] as const)
+      : ([
+        ['map', 'Sections', MapTrifold],
+        ['document', 'Editor', ClipboardText],
       ] as const);
 
   const copyJSON = async () => {
@@ -777,47 +855,70 @@ export function EditorWorkspace({ prompt, onBack }: { prompt: Prompt; onBack: ()
           <p className="flex items-center gap-1.5 text-[11px] text-zinc-400"><CheckCircle size={12} className="text-emerald-600" weight="fill" /> Saved locally</p>
         </div>
         <div className="hidden items-center gap-1.5 sm:flex">
-          <button type="button" onClick={copyJSON} className="inline-flex h-9 items-center gap-2 rounded-full px-3 text-xs font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950">{copied ? <Check size={16} /> : <Copy size={16} />}{copied ? 'Copied' : 'Copy JSON'}</button>
-          <button type="button" onClick={exportJSON} className="inline-flex h-9 items-center gap-2 rounded-full px-3 text-xs font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950"><DownloadSimple size={16} /> Export</button>
-          <button type="button" onClick={() => { setView(view === 'image' ? 'editor' : 'image'); setCompactPane('document'); }} className="inline-flex h-9 items-center gap-2 rounded-full bg-violet-600 px-3 text-xs font-medium text-white shadow-sm hover:bg-violet-700">
-            {view === 'image' ? <ArrowLeft size={16} /> : <ImageSquare size={16} />}
-            {view === 'image' ? 'Back to editor' : 'Generate image'}
-          </button>
-          <button type="button" onClick={() => { setView('video'); setCompactPane('document'); }} className="inline-flex h-9 items-center gap-2 rounded-full border border-zinc-200 px-3 text-xs font-medium text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950">
-            <FilmStrip size={16} /> Video studio
-          </button>
           <span className="rounded-full bg-zinc-100 px-3 py-2 text-xs font-medium text-zinc-600">{providerNames[currentProvider]}</span>
+          <details className="relative">
+            <summary className="flex h-9 cursor-pointer list-none items-center gap-2 rounded-full border border-zinc-200 px-3 text-xs font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-950">Document actions <CaretDown size={14} /></summary>
+            <div className="absolute right-0 top-11 z-40 w-44 rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl">
+              <button type="button" onClick={copyJSON} className="flex h-10 w-full items-center gap-2 rounded-xl px-3 text-left text-xs font-medium text-zinc-700 hover:bg-zinc-50">{copied ? <Check size={16} /> : <Copy size={16} />}{copied ? 'Copied' : 'Copy JSON'}</button>
+              <button type="button" onClick={exportJSON} className="flex h-10 w-full items-center gap-2 rounded-xl px-3 text-left text-xs font-medium text-zinc-700 hover:bg-zinc-50"><DownloadSimple size={16} /> Export JSON</button>
+            </div>
+          </details>
         </div>
       </header>}
 
-      <div className={`${view === 'video' ? 'hidden' : 'grid'} h-11 shrink-0 ${view === 'image' ? 'grid-cols-2' : 'grid-cols-5'} border-b border-zinc-200 bg-white xl:hidden`} role="tablist" aria-label="Editor panes">
+      {view !== 'video' && (
+        <nav className="shrink-0 border-b border-zinc-200 bg-white px-3 sm:px-5" aria-label="Prompt workflow">
+          <div className="mx-auto grid h-16 w-full max-w-3xl grid-cols-3 gap-1 sm:gap-3" role="tablist">
+            {([
+              ['build', '1', 'Build', 'Shape the prompt'],
+              ['enhance', '2', 'Refine', 'Improve with AI'],
+              ['generate', '3', 'Generate', 'Create the output'],
+            ] as const).map(([value, number, label, description]) => (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                aria-selected={step === value}
+                onClick={() => openStep(value)}
+                className={`group flex min-w-0 items-center justify-center gap-2 border-b-2 px-1 text-left transition-colors sm:justify-start sm:px-3 ${step === value ? 'border-violet-600 text-zinc-950' : 'border-transparent text-zinc-400 hover:text-zinc-700'}`}
+              >
+                <span className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${step === value ? 'bg-violet-600 text-white' : 'bg-zinc-100 text-zinc-500'}`}>{number}</span>
+                <span className="min-w-0">
+                  <span className="block text-xs font-semibold sm:text-sm">{label}</span>
+                  <span className="hidden truncate text-[10px] text-zinc-400 sm:block">{description}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </nav>
+      )}
+
+      <div className={`${view === 'video' || (step === 'generate' && view !== 'image') ? 'hidden' : 'grid'} h-11 shrink-0 grid-cols-2 border-b border-zinc-200 bg-white xl:hidden`} role="tablist" aria-label="Editor panes">
         {compactTabs.map(([pane, label, Icon]) => (
           <button
             key={pane}
             type="button"
             role="tab"
-            aria-selected={pane === 'image' || pane === 'video' ? view === pane : compactPane === pane}
+            aria-selected={compactPane === pane}
             onClick={() => {
-              if (pane === 'image' || pane === 'video') {
-                setView(pane);
-                setCompactPane('document');
-              } else {
-                setCompactPane(pane);
-              }
+              setCompactPane(pane);
             }}
-            className={`flex items-center justify-center gap-1.5 border-b-2 text-[11px] font-medium sm:gap-2 sm:text-xs ${(pane === 'image' || pane === 'video' ? view === pane : compactPane === pane) ? 'border-violet-600 text-violet-700' : 'border-transparent text-zinc-500'}`}
+            className={`flex items-center justify-center gap-1.5 border-b-2 text-[11px] font-medium sm:gap-2 sm:text-xs ${compactPane === pane ? 'border-violet-600 text-violet-700' : 'border-transparent text-zinc-500'}`}
           ><Icon size={16} />{label}</button>
         ))}
       </div>
 
-      <div className={`grid min-h-0 flex-1 grid-cols-1 ${view === 'video' ? 'xl:grid-cols-1' : 'xl:grid-cols-[280px_minmax(0,1fr)_340px]'}`}>
-        <div className={`${view === 'video' ? 'hidden' : compactPane === 'map' ? 'flex' : 'hidden'} min-h-0 border-r border-zinc-200 ${view === 'video' ? '' : 'xl:flex'}`}>
+      {step === 'generate' && view !== 'image' && view !== 'video' && (
+        <GenerationChooser prompt={prompt} onChoose={(nextView) => { changeView(nextView); setCompactPane('document'); }} />
+      )}
+      <div className={`${step === 'generate' && view !== 'image' && view !== 'video' ? 'hidden' : 'grid'} min-h-0 flex-1 grid-cols-1 ${view === 'video' ? 'xl:grid-cols-1' : step === 'enhance' ? 'xl:grid-cols-[minmax(0,1fr)_360px]' : 'xl:grid-cols-[280px_minmax(0,1fr)]'}`}>
+        <div className={`${view === 'video' || step === 'enhance' ? 'hidden' : compactPane === 'map' ? 'flex' : 'hidden'} min-h-0 border-r border-zinc-200 ${view === 'video' || step === 'enhance' ? '' : 'xl:flex'}`}>
           <PromptMap prompt={prompt} activePath={effectivePath} onSelect={selectSection} />
         </div>
-        <div className={`${compactPane === 'document' || view === 'video' ? 'flex' : 'hidden'} min-h-0 min-w-0 xl:flex ${view === 'image' ? 'xl:col-span-2' : ''}`}>
-          <DocumentCanvas prompt={prompt} activePath={effectivePath} view={view} onViewChange={setView} />
+        <div className={`${compactPane === 'document' || view === 'video' ? 'flex' : 'hidden'} min-h-0 min-w-0 xl:flex`}>
+          <DocumentCanvas prompt={prompt} activePath={effectivePath} view={view} onViewChange={changeView} />
         </div>
-        <div className={view === 'image' || view === 'video' ? 'hidden' : `${compactPane === 'enhance' ? 'flex' : 'hidden'} min-h-0 border-l border-zinc-200 xl:flex`}>
+        <div className={view === 'image' || view === 'video' || step !== 'enhance' ? 'hidden' : `${compactPane === 'enhance' ? 'flex' : 'hidden'} min-h-0 border-l border-zinc-200 xl:flex`}>
           <EnhancePanel prompt={prompt} />
         </div>
       </div>

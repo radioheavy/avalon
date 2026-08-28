@@ -38,9 +38,9 @@ test('plain-text brief stays connected from import through video generation', as
   await page.getByRole('button', { name: 'Create document' }).click();
 
   await expect(page.getByRole('heading', { name: 'WATER, EARTH, DAWN' })).toBeVisible();
-  await page.getByRole('tab', { name: 'Brief' }).click();
+  await page.getByLabel('More document views').selectOption('brief');
   await expect(page.getByLabel('Source brief')).toContainText('watercolor wash animation');
-  await page.getByRole('tab', { name: 'Timeline' }).click();
+  await page.getByLabel('More document views').selectOption('timeline');
   await expect(page.getByTestId('timeline-view')).toContainText('MEMORY HOLDS');
   await page.getByRole('button', { name: 'Open video studio' }).click();
   await expect(page.getByTestId('film-timeline')).toContainText('THE PAPER BREATHES');
