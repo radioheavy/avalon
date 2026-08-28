@@ -176,30 +176,30 @@ export function BriefView({ prompt }: { prompt: Prompt }) {
   };
 
   return (
-    <div data-testid="brief-view" className="mx-auto w-full max-w-4xl space-y-5 p-4 sm:p-7">
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-7">
+    <div data-testid="brief-view" className="mx-auto w-full min-w-0 max-w-4xl space-y-5 p-3 sm:p-5 lg:p-7">
+      <section className="min-w-0 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5 lg:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-700"><FileText size={15} /> Original brief</div>
             <h2 className="mt-2 break-words text-xl font-semibold tracking-tight text-zinc-950 sm:text-2xl">{prompt.name}</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">The source stays intact while the working structure evolves alongside it.</p>
           </div>
-          <div className="flex flex-wrap gap-2 text-xs font-medium">
-            <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 capitalize text-zinc-700">{mediaType}</span>
-            <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-zinc-600">{sourceKind}</span>
-            <span className={`rounded-full border px-3 py-1.5 capitalize ${projectionStatus === 'stale' ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>{projectionStatus}</span>
+          <div className="flex min-w-0 flex-wrap gap-2 text-xs font-medium">
+            <span className="max-w-full break-words rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 capitalize text-zinc-700 [overflow-wrap:anywhere]">{mediaType}</span>
+            <span className="max-w-full break-words rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-zinc-600 [overflow-wrap:anywhere]">{sourceKind}</span>
+            <span className={`max-w-full break-words rounded-full border px-3 py-1.5 capitalize [overflow-wrap:anywhere] ${projectionStatus === 'stale' ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>{projectionStatus}</span>
           </div>
         </div>
-        <textarea aria-label="Source brief" value={draft} onChange={(event) => { setDraft(event.target.value); setNotice(''); }} className="mt-6 min-h-[360px] w-full resize-y rounded-xl border border-zinc-200 bg-zinc-50 p-4 font-sans text-sm leading-7 text-zinc-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100" />
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <button type="button" onClick={saveSource} disabled={draft === text} className="h-10 rounded-full border border-zinc-200 px-4 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-40">Save source only</button>
-          <button type="button" onClick={rebuild} className="h-10 rounded-full bg-zinc-950 px-4 text-xs font-medium text-white hover:bg-zinc-800">Rebuild structure</button>
-          <button type="button" onClick={organizeWithAI} disabled={organizing} className="h-10 rounded-full border border-violet-200 bg-violet-50 px-4 text-xs font-medium text-violet-700 hover:bg-violet-100 disabled:opacity-50">{organizing ? 'Organizing…' : 'Organize with AI'}</button>
+        <textarea aria-label="Source brief" value={draft} onChange={(event) => { setDraft(event.target.value); setNotice(''); }} className="mt-6 min-h-[300px] w-full resize-y break-words rounded-xl border border-zinc-200 bg-zinc-50 p-3 font-sans text-sm leading-7 text-zinc-700 outline-none [overflow-wrap:anywhere] focus:border-violet-400 focus:ring-2 focus:ring-violet-100 sm:min-h-[360px] sm:p-4" />
+        <div className="mt-4 grid w-full gap-2 min-[460px]:flex min-[460px]:flex-wrap min-[460px]:items-center">
+          <button type="button" onClick={saveSource} disabled={draft === text} className="min-h-10 rounded-full border border-zinc-200 px-4 py-2 text-center text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-40">Save source only</button>
+          <button type="button" onClick={rebuild} className="min-h-10 rounded-full bg-zinc-950 px-4 py-2 text-center text-xs font-medium text-white hover:bg-zinc-800">Rebuild structure</button>
+          <button type="button" onClick={organizeWithAI} disabled={organizing} className="min-h-10 rounded-full border border-violet-200 bg-violet-50 px-4 py-2 text-center text-xs font-medium text-violet-700 hover:bg-violet-100 disabled:opacity-50">{organizing ? 'Organizing…' : 'Organize with AI'}</button>
         </div>
-        {notice && <p role="status" className="mt-3 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs leading-5 text-zinc-600">{notice}</p>}
+        {notice && <p role="status" className="mt-3 break-words rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs leading-5 text-zinc-600 [overflow-wrap:anywhere]">{notice}</p>}
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-3">
+      <section className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,10rem),1fr))] gap-3">
         <Metric icon={<FilmStrip size={18} />} label="Format" value={humanize(mediaType)} />
         <Metric icon={<Clock size={18} />} label="Segments" value={String(timeline.length)} />
         <Metric icon={<FlowArrow size={18} />} label="Source" value="Preserved" />
@@ -209,7 +209,7 @@ export function BriefView({ prompt }: { prompt: Prompt }) {
 }
 
 function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"><div className="flex items-center gap-2 text-violet-700">{icon}<span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400">{label}</span></div><p className="mt-3 text-sm font-semibold text-zinc-900">{value}</p></div>;
+  return <div className="min-w-0 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"><div className="flex min-w-0 items-center gap-2 text-violet-700">{icon}<span className="min-w-0 break-words text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-400 [overflow-wrap:anywhere]">{label}</span></div><p className="mt-3 break-words text-sm font-semibold text-zinc-900 [overflow-wrap:anywhere]">{value}</p></div>;
 }
 
 export function StructureView({ prompt }: { prompt: Prompt }) {
@@ -217,10 +217,10 @@ export function StructureView({ prompt }: { prompt: Prompt }) {
   const content = asRecord(projection?.content) || prompt.content as JsonObject;
   const rows = Object.entries(content);
   return (
-    <div data-testid="structure-view" className="mx-auto w-full max-w-4xl space-y-5 p-4 sm:p-7">
-      <div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-700">Working structure</p><h2 className="mt-2 text-xl font-semibold tracking-tight text-zinc-950">Organized prompt</h2></div><span className="shrink-0 text-xs text-zinc-400">{rows.length} top-level sections</span></div>
-      <div className="grid gap-3 md:grid-cols-2">
-        {rows.map(([key, value]) => <article key={key} className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm"><div className="flex items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-700"><Sparkle size={17} /></span><div className="min-w-0"><h3 className="truncate text-sm font-semibold text-zinc-950">{humanize(key)}</h3><p className="text-xs text-zinc-400">{Array.isArray(value) ? `${value.length} items` : value && typeof value === 'object' ? `${Object.keys(value).length} fields` : typeof value}</p></div></div><p className="mt-4 break-words whitespace-pre-wrap text-sm leading-6 text-zinc-600">{compactText(typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value))}</p></article>)}
+    <div data-testid="structure-view" className="mx-auto w-full min-w-0 max-w-4xl space-y-5 p-3 sm:p-5 lg:p-7">
+      <div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-700">Working structure</p><h2 className="mt-2 break-words text-xl font-semibold tracking-tight text-zinc-950 [overflow-wrap:anywhere]">Organized prompt</h2></div><span className="max-w-full break-words text-xs text-zinc-400 [overflow-wrap:anywhere]">{rows.length} top-level sections</span></div>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-3">
+        {rows.map(([key, value]) => <article key={key} className="min-w-0 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-5"><div className="flex min-w-0 items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-700"><Sparkle size={17} /></span><div className="min-w-0"><h3 className="break-words text-sm font-semibold text-zinc-950 [overflow-wrap:anywhere]">{humanize(key)}</h3><p className="text-xs text-zinc-400">{Array.isArray(value) ? `${value.length} items` : value && typeof value === 'object' ? `${Object.keys(value).length} fields` : typeof value}</p></div></div><p className="mt-4 break-words whitespace-pre-wrap text-sm leading-6 text-zinc-600 [overflow-wrap:anywhere]">{compactText(typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value))}</p></article>)}
       </div>
     </div>
   );
@@ -229,10 +229,10 @@ export function StructureView({ prompt }: { prompt: Prompt }) {
 export function TimelineView({ prompt, onOpenVideo }: { prompt: Prompt; onOpenVideo: () => void }) {
   const timeline = useMemo(() => extractTimeline(prompt), [prompt]);
   return (
-    <div data-testid="timeline-view" className="mx-auto w-full max-w-5xl space-y-5 p-4 sm:p-7">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-700">Editorial timeline</p><h2 className="mt-2 text-xl font-semibold tracking-tight text-zinc-950">Shape the sequence</h2><p className="mt-2 text-sm text-zinc-500">Each segment remains connected to the same source brief and continuity.</p></div><button type="button" onClick={onOpenVideo} className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-zinc-950 px-4 text-xs font-medium text-white hover:bg-zinc-800"><PlayCircle size={17} /> Open video studio</button></div>
+    <div data-testid="timeline-view" className="mx-auto w-full min-w-0 max-w-5xl space-y-5 p-3 sm:p-5 lg:p-7">
+      <div className="flex flex-wrap items-end justify-between gap-4"><div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-700">Editorial timeline</p><h2 className="mt-2 break-words text-xl font-semibold tracking-tight text-zinc-950 [overflow-wrap:anywhere]">Shape the sequence</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">Each segment remains connected to the same source brief and continuity.</p></div><button type="button" onClick={onOpenVideo} className="inline-flex min-h-10 max-w-full items-center justify-center gap-2 rounded-full bg-zinc-950 px-4 py-2 text-center text-xs font-medium text-white hover:bg-zinc-800"><PlayCircle className="shrink-0" size={17} /> <span className="break-words">Open video studio</span></button></div>
       <div className="relative space-y-3 before:absolute before:bottom-5 before:left-[19px] before:top-5 before:w-px before:bg-zinc-200 sm:before:left-[23px]">
-        {timeline.map((segment, index) => <article key={segment.id} className="relative flex gap-4 rounded-2xl border border-zinc-200 bg-white p-4 pl-3 shadow-sm sm:gap-5 sm:p-5"><div className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-violet-200 bg-violet-50 text-xs font-semibold text-violet-700 sm:h-11 sm:w-11">{String(index + 1).padStart(2, '0')}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-start justify-between gap-2"><div className="min-w-0"><h3 className="break-words text-sm font-semibold text-zinc-950">{segment.label}</h3><p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-zinc-400"><Clock size={13} /> {formatDuration(segment)}</p></div><span className="max-w-full break-words rounded-full bg-zinc-100 px-2.5 py-1 text-[10px] font-medium text-zinc-500">{segment.status || 'Ready to shape'}</span></div><p className="mt-4 break-words whitespace-pre-wrap text-sm leading-6 text-zinc-600">{compactText(segment.description, 360)}</p><div className="mt-4 grid gap-2 text-xs text-zinc-500 sm:grid-cols-3">{segment.visual && <span className="break-words rounded-lg bg-zinc-50 px-3 py-2"><strong className="font-semibold text-zinc-700">Visual</strong><br />{compactText(segment.visual, 90)}</span>}{segment.motion && <span className="break-words rounded-lg bg-zinc-50 px-3 py-2"><strong className="font-semibold text-zinc-700">Motion</strong><br />{compactText(segment.motion, 90)}</span>}{segment.audio && <span className="break-words rounded-lg bg-zinc-50 px-3 py-2"><strong className="font-semibold text-zinc-700">Audio</strong><br />{compactText(segment.audio, 90)}</span>}</div>{segment.constraints?.length ? <p className="mt-3 break-words rounded-lg bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800"><strong className="font-semibold">Constraints:</strong> {segment.constraints.join(' · ')}</p> : null}</div></article>)}
+        {timeline.map((segment, index) => <article key={segment.id} className="relative flex min-w-0 gap-3 rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm sm:gap-5 sm:p-5"><div className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-violet-200 bg-violet-50 text-xs font-semibold text-violet-700 sm:h-11 sm:w-11">{String(index + 1).padStart(2, '0')}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-start justify-between gap-2"><div className="min-w-0 flex-1"><h3 className="break-words text-sm font-semibold text-zinc-950 [overflow-wrap:anywhere]">{segment.label}</h3><p className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-zinc-400"><Clock className="shrink-0" size={13} /> <span className="break-words [overflow-wrap:anywhere]">{formatDuration(segment)}</span></p></div><span className="max-w-full break-words rounded-full bg-zinc-100 px-2.5 py-1 text-[10px] font-medium text-zinc-500 [overflow-wrap:anywhere]">{segment.status || 'Ready to shape'}</span></div><p className="mt-4 break-words whitespace-pre-wrap text-sm leading-6 text-zinc-600 [overflow-wrap:anywhere]">{compactText(segment.description, 360)}</p><div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,11rem),1fr))] gap-2 text-xs text-zinc-500">{segment.visual && <span className="min-w-0 break-words rounded-lg bg-zinc-50 px-3 py-2 [overflow-wrap:anywhere]"><strong className="font-semibold text-zinc-700">Visual</strong><br />{compactText(segment.visual, 90)}</span>}{segment.motion && <span className="min-w-0 break-words rounded-lg bg-zinc-50 px-3 py-2 [overflow-wrap:anywhere]"><strong className="font-semibold text-zinc-700">Motion</strong><br />{compactText(segment.motion, 90)}</span>}{segment.audio && <span className="min-w-0 break-words rounded-lg bg-zinc-50 px-3 py-2 [overflow-wrap:anywhere]"><strong className="font-semibold text-zinc-700">Audio</strong><br />{compactText(segment.audio, 90)}</span>}</div>{segment.constraints?.length ? <p className="mt-3 break-words rounded-lg bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800 [overflow-wrap:anywhere]"><strong className="font-semibold">Constraints:</strong> {segment.constraints.join(' · ')}</p> : null}</div></article>)}
       </div>
     </div>
   );

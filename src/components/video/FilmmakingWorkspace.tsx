@@ -334,19 +334,20 @@ export function FilmmakingWorkspace({ prompt, onReturn, capabilities = VIDEO_CAP
     } catch (error) { setQueueMessage(error instanceof Error ? error.message : 'Generation failed'); }
   };
 
-  if (!selectedScene || !capability) return <section data-testid="video-studio" className="p-6 text-sm text-zinc-500">No video scenes are available yet.</section>;
+  if (!selectedScene || !capability) return <section data-testid="video-studio" className="w-full max-w-full p-4 text-sm text-zinc-500 sm:p-6">No video scenes are available yet.</section>;
 
   return (
-    <section data-testid="video-studio" className="flex h-full min-h-0 flex-col bg-zinc-50 text-zinc-950">
+    <section data-testid="video-studio" className="flex h-full min-h-0 w-full max-w-full flex-col overflow-x-hidden bg-zinc-50 text-zinc-950">
       <header className="flex min-h-16 shrink-0 items-center gap-2 border-b border-zinc-200 bg-white px-3 sm:gap-3 sm:px-5">
         <button type="button" onClick={onReturn} aria-label="Back to editor" className="inline-flex h-10 items-center gap-2 rounded-full px-2 text-xs font-medium text-zinc-600 hover:bg-zinc-100 sm:px-3"><ArrowLeft size={16} /><span className="hidden sm:inline">Back to editor</span></button>
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-200 text-violet-700"><FilmStrip size={19} /></span>
         <div className="min-w-0 flex-1"><h2 className="text-sm font-semibold">Filmmaking workspace</h2><p className="truncate text-xs text-zinc-500">{prompt.name} · {scenes.length} scenes · {formatTime(totalDuration)}</p></div>
-        <span className="hidden max-w-[42vw] items-center gap-1.5 truncate rounded-full bg-zinc-100 px-3 py-1.5 text-xs text-zinc-600 sm:inline-flex"><Queue size={14} /> {queueMessage}</span>
+        <span title={queueMessage} className="hidden max-w-[42vw] items-center gap-1.5 truncate rounded-full bg-zinc-100 px-3 py-1.5 text-xs text-zinc-600 sm:inline-flex"><Queue size={14} /> {queueMessage}</span>
+        <span aria-label={`Generation status: ${queueMessage}`} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 sm:hidden"><Queue size={15} /></span>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:grid lg:grid-cols-[220px_minmax(0,1fr)_360px] lg:overflow-hidden">
-        <aside className="hidden min-h-0 overflow-y-auto border-r border-zinc-200 bg-white lg:block" aria-label="Scene navigator">
+      <div className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto xl:grid xl:grid-cols-[220px_minmax(0,1fr)_360px] xl:overflow-hidden">
+        <aside className="hidden min-h-0 overflow-y-auto border-r border-zinc-200 bg-white xl:block" aria-label="Scene navigator">
           <div className="sticky top-0 z-10 border-b border-zinc-200 bg-white px-4 py-4">
             <Label>Scenes</Label>
             <p className="mt-1 text-xs text-zinc-500">{scenes.length} scenes · {formatTime(totalDuration)}</p>
@@ -361,37 +362,39 @@ export function FilmmakingWorkspace({ prompt, onReturn, capabilities = VIDEO_CAP
             ))}
           </div>
         </aside>
-        <main className="min-w-0 shrink-0 overflow-x-hidden p-3 sm:p-5 lg:min-h-0 lg:shrink lg:overflow-y-auto">
-          <div className="mx-auto max-w-5xl space-y-4">
+        <main className="min-w-0 w-full max-w-full shrink-0 overflow-x-hidden p-3 sm:p-5 xl:min-h-0 xl:shrink xl:overflow-y-auto">
+          <div className="mx-auto w-full max-w-5xl space-y-4">
             <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-950 shadow-sm">
               <div className="relative aspect-video w-full">
                 {videoUrl ? <video data-testid="generated-video" ref={videoRef} key={videoUrl} src={videoUrl} crossOrigin="anonymous" controls playsInline className="h-full w-full object-contain" onLoadedMetadata={(event) => playerLoaded(event.currentTarget)} onTimeUpdate={(event) => setCurrentTime(selectedScene.start + event.currentTarget.currentTime)} onEnded={advanceSequence} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} /> : <div className="flex h-full flex-col items-center justify-center gap-3 text-center text-zinc-500"><FilmStrip size={32} /><p className="text-sm">Generate or select a take to start editing.</p></div>}
                 <div className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/65 px-2.5 py-1.5 text-[10px] font-medium text-white"><FrameCorners size={13} /> {formatTime(currentTime)}</div>
               </div>
-              <div className="flex flex-wrap items-center gap-2 border-t border-white/10 px-3 py-2.5 text-xs text-zinc-300 sm:px-4">
-                <button type="button" aria-label={isPlaying ? 'Pause video' : 'Play video'} onClick={() => { if (!videoRef.current) return; if (videoRef.current.paused) void videoRef.current.play(); else videoRef.current.pause(); }} className="inline-flex h-8 w-8 items-center justify-center rounded-lg hover:bg-white/10">{isPlaying ? <Pause size={15} /> : <Play size={15} weight="fill" />}</button>
+              <div className="flex flex-wrap items-center gap-1.5 border-t border-white/10 px-3 py-2.5 text-xs text-zinc-300 sm:gap-2 sm:px-4">
+                <button type="button" aria-label={isPlaying ? 'Pause video' : 'Play video'} onClick={() => { if (!videoRef.current) return; if (videoRef.current.paused) void videoRef.current.play(); else videoRef.current.pause(); }} className="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/10">{isPlaying ? <Pause size={15} /> : <Play size={15} weight="fill" />}</button>
                 <button type="button" onClick={() => void extractFrame('png', true)} className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2 hover:bg-white/10" data-testid="export-frame-png"><DownloadSimple size={14} /> PNG</button>
                 <button type="button" onClick={() => void extractFrame('jpeg', true)} className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2 hover:bg-white/10" data-testid="export-frame-jpg"><DownloadSimple size={14} /> JPG</button>
-                <button type="button" onClick={useAsNextFirstFrame} disabled={!videoUrl} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-violet-500/20 px-2.5 text-violet-200 hover:bg-violet-500/30 disabled:opacity-40" data-testid="use-next-first-frame"><ArrowRight size={14} /> Use as next first frame</button>
-                {captureMessage && <span role="status" className="ml-auto truncate text-[11px] text-zinc-400">{captureMessage}</span>}
+                <button type="button" onClick={useAsNextFirstFrame} disabled={!videoUrl} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-violet-500/20 px-2.5 text-violet-200 hover:bg-violet-500/30 disabled:opacity-40" data-testid="use-next-first-frame"><ArrowRight size={14} /><span className="sm:hidden">Next frame</span><span className="hidden sm:inline">Use as next first frame</span></button>
+                {captureMessage && <span role="status" className="w-full break-words text-[11px] leading-4 text-zinc-400 sm:ml-auto sm:w-auto sm:max-w-[45%] sm:truncate">{captureMessage}</span>}
               </div>
             </section>
 
             <section className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm sm:p-4" data-testid="film-timeline">
               <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2"><FilmStrip size={17} className="text-violet-700" /><h3 className="text-sm font-semibold">Film timeline</h3></div><span className="text-xs text-zinc-400">{formatTime(currentTime)} / {formatTime(totalDuration)}</span></div>
-              <div className="relative mt-4 h-16 overflow-hidden rounded-xl bg-zinc-100" role="slider" aria-label="Film playhead" aria-valuemin={0} aria-valuemax={totalDuration} aria-valuenow={currentTime} tabIndex={0} onKeyDown={(event) => { if (event.key === 'ArrowLeft') seek(Math.max(0, currentTime - 1)); if (event.key === 'ArrowRight') seek(Math.min(totalDuration, currentTime + 1)); }} onClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); seek(((event.clientX - rect.left) / rect.width) * totalDuration); }}>
-                {scenes.map((scene, index) => { const left = `${(scene.start / totalDuration) * 100}%`; const width = `${((scene.end - scene.start) / totalDuration) * 100}%`; return <button type="button" key={scene.id} aria-label={`${scene.title}, ${formatTime(scene.start)} to ${formatTime(scene.end)}`} onClick={(event) => { event.stopPropagation(); setMobilePanel('inspector'); seek(scene.start); }} className={`absolute bottom-2 top-2 min-w-[44px] overflow-hidden rounded-lg border px-2 text-left transition-colors ${selectedScene.id === scene.id ? 'border-violet-500 bg-violet-100 text-violet-900' : 'border-zinc-200 bg-white text-zinc-600 hover:border-violet-300'}`} style={{ left, width }}><span className="block truncate text-[10px] font-semibold">{String(index + 1).padStart(2, '0')} · {scene.title}</span><span className="mt-1 block text-[10px] text-zinc-400">{formatTime(scene.end - scene.start)}</span></button>; })}
-                <span aria-hidden="true" className="pointer-events-none absolute bottom-0 top-0 z-20 w-0.5 bg-violet-600" style={{ left: `${Math.min(100, Math.max(0, (currentTime / totalDuration) * 100))}%` }}><span className="absolute -left-1.5 top-0 h-3 w-3 rounded-full bg-violet-600" /></span>
+              <div className="mt-4 overflow-x-auto pb-1 [scrollbar-width:thin]">
+                <div className="relative h-16 min-w-[460px] overflow-hidden rounded-xl bg-zinc-100" role="slider" aria-label="Film playhead" aria-valuemin={0} aria-valuemax={totalDuration} aria-valuenow={currentTime} tabIndex={0} onKeyDown={(event) => { if (event.key === 'ArrowLeft') seek(Math.max(0, currentTime - 1)); if (event.key === 'ArrowRight') seek(Math.min(totalDuration, currentTime + 1)); }} onClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); seek(((event.clientX - rect.left) / rect.width) * totalDuration); }}>
+                  {scenes.map((scene, index) => { const left = `${(scene.start / totalDuration) * 100}%`; const width = `${((scene.end - scene.start) / totalDuration) * 100}%`; return <button type="button" key={scene.id} aria-label={`${scene.title}, ${formatTime(scene.start)} to ${formatTime(scene.end)}`} onClick={(event) => { event.stopPropagation(); setMobilePanel('inspector'); seek(scene.start); }} className={`absolute bottom-2 top-2 min-w-[44px] overflow-hidden rounded-lg border px-2 text-left transition-colors ${selectedScene.id === scene.id ? 'border-violet-500 bg-violet-100 text-violet-900' : 'border-zinc-200 bg-white text-zinc-600 hover:border-violet-300'}`} style={{ left, width }}><span className="block truncate text-[10px] font-semibold">{String(index + 1).padStart(2, '0')} · {scene.title}</span><span className="mt-1 block text-[10px] text-zinc-400">{formatTime(scene.end - scene.start)}</span></button>; })}
+                  <span aria-hidden="true" className="pointer-events-none absolute bottom-0 top-0 z-20 w-0.5 bg-violet-600" style={{ left: `${Math.min(100, Math.max(0, (currentTime / totalDuration) * 100))}%` }}><span className="absolute -left-1.5 top-0 h-3 w-3 rounded-full bg-violet-600" /></span>
+                </div>
               </div>
             </section>
 
-            <div className="flex gap-1 rounded-xl border border-zinc-200 bg-white p-1 lg:hidden" role="tablist" aria-label="Video workspace panels">
+            <div className="flex gap-1 rounded-xl border border-zinc-200 bg-white p-1 xl:hidden" role="tablist" aria-label="Video workspace panels">
               {([['timeline', 'Timeline', FilmStrip], ['inspector', 'Inspector', SlidersHorizontal], ['takes', 'Takes', Stack]] as const).map(([value, label, Icon]) => <button type="button" key={value} role="tab" aria-selected={mobilePanel === value} onClick={() => setMobilePanel(value)} className={`flex h-11 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg px-1 text-[11px] font-medium sm:gap-1.5 sm:text-xs ${mobilePanel === value ? 'bg-violet-50 text-violet-700' : 'text-zinc-500'}`}><Icon size={14} />{label}</button>)}
             </div>
           </div>
         </main>
 
-        <aside className={`min-h-0 overflow-y-auto border-t border-zinc-200 bg-white lg:border-l lg:border-t-0 ${mobilePanel === 'inspector' ? 'block' : 'hidden'} lg:block`} data-testid="scene-inspector">
+        <aside className={`min-h-0 w-full max-w-full overflow-y-auto border-t border-zinc-200 bg-white xl:border-l xl:border-t-0 ${mobilePanel === 'inspector' ? 'block' : 'hidden'} xl:block`} data-testid="scene-inspector">
           <div className="border-b border-zinc-200 px-4 py-4 sm:px-5"><div className="flex items-center gap-2 text-sm font-semibold"><SlidersHorizontal size={17} className="text-violet-700" /> Scene inspector</div><p className="mt-1 text-xs leading-5 text-zinc-500">Edit one scene and generate a new take without touching the rest of the film.</p></div>
           <div className="space-y-5 p-4 sm:p-5">
             <div className="flex items-center justify-between gap-2"><div><Label>Active scene</Label><p className="mt-1 text-sm font-semibold">{selectedScene.title}</p></div><span className="rounded-full bg-zinc-100 px-2.5 py-1 text-[10px] text-zinc-500">{formatTime(selectedScene.start)} — {formatTime(selectedScene.end)}</span></div>
@@ -413,7 +416,7 @@ export function FilmmakingWorkspace({ prompt, onReturn, capabilities = VIDEO_CAP
           </div>
         </aside>
 
-        <aside className={`min-h-0 overflow-y-auto border-t border-zinc-200 bg-white lg:hidden ${mobilePanel === 'takes' ? 'block' : 'hidden'}`} data-testid="take-browser"><div className="border-b border-zinc-200 px-4 py-4"><div className="flex items-center gap-2 text-sm font-semibold"><Stack size={17} className="text-violet-700" /> Takes & variations</div></div><div className="space-y-2 p-4">{takes.length ? takes.map((take) => <button type="button" key={take.id} onClick={() => chooseTake(take.id)} className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left ${selectedTake?.id === take.id ? 'border-violet-300 bg-violet-50' : 'border-zinc-200'}`}><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 text-xs font-semibold">{take.label.replace(/\D/g, '') || '1'}</span><span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold">{take.label}</span><span className="mt-1 block text-[10px] text-zinc-400">{take.status || 'Available'}{take.model ? ` · ${take.model}` : ''}</span></span>{selectedTake?.id === take.id && <Check size={15} className="text-violet-700" />}</button>) : <p className="py-8 text-center text-xs text-zinc-500">No takes yet. Generate a scene to create the first variation.</p>}<button type="button" onClick={generate} className="flex h-10 w-full items-center justify-center gap-2 rounded-full border border-dashed border-zinc-300 text-xs font-medium text-zinc-600 hover:bg-zinc-50"><Plus size={15} /> Generate variation</button></div></aside>
+        <aside className={`min-h-0 w-full max-w-full overflow-y-auto border-t border-zinc-200 bg-white xl:hidden ${mobilePanel === 'takes' ? 'block' : 'hidden'}`} data-testid="take-browser"><div className="border-b border-zinc-200 px-4 py-4"><div className="flex items-center gap-2 text-sm font-semibold"><Stack size={17} className="text-violet-700" /> Takes & variations</div></div><div className="space-y-2 p-4">{takes.length ? takes.map((take) => <button type="button" key={take.id} onClick={() => chooseTake(take.id)} className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left ${selectedTake?.id === take.id ? 'border-violet-300 bg-violet-50' : 'border-zinc-200'}`}><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-xs font-semibold">{take.label.replace(/\D/g, '') || '1'}</span><span className="min-w-0 flex-1"><span className="block truncate text-xs font-semibold">{take.label}</span><span className="mt-1 block truncate text-[10px] text-zinc-400">{take.status || 'Available'}{take.model ? ` · ${take.model}` : ''}</span></span>{selectedTake?.id === take.id && <Check size={15} className="shrink-0 text-violet-700" />}</button>) : <p className="py-8 text-center text-xs text-zinc-500">No takes yet. Generate a scene to create the first variation.</p>}<button type="button" onClick={generate} className="flex h-11 w-full items-center justify-center gap-2 rounded-full border border-dashed border-zinc-300 text-xs font-medium text-zinc-600 hover:bg-zinc-50"><Plus size={15} /> Generate variation</button></div></aside>
       </div>
     </section>
   );

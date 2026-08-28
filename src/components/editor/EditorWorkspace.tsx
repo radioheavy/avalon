@@ -164,10 +164,10 @@ function PromptMap({
   };
 
   return (
-    <aside data-testid="prompt-map" className="flex h-full min-h-0 flex-col bg-white">
-      <div className="border-b border-zinc-200 px-4 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm font-semibold text-zinc-950">
+    <aside data-testid="prompt-map" className="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-white">
+      <div className="min-w-0 shrink-0 border-b border-zinc-200 px-4 py-4">
+        <div className="flex min-w-0 items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-zinc-950">
             <MapTrifold size={18} />
             Prompt map
           </div>
@@ -192,7 +192,7 @@ function PromptMap({
         </label>
       </div>
 
-      <nav aria-label="Prompt sections" className="flex-1 overflow-y-auto px-2 py-3">
+      <nav aria-label="Prompt sections" className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-2 py-3">
         {filtered.map((entry) => {
           const active = displayPath(activePath) === displayPath(entry.path);
           return (
@@ -246,7 +246,7 @@ function PromptMap({
         )}
       </nav>
 
-      <div className="border-t border-zinc-200 p-3">
+      <div className="min-w-0 shrink-0 border-t border-zinc-200 p-3">
         <button
           type="button"
           onClick={() => setShowAdd(true)}
@@ -463,19 +463,19 @@ function DocumentCanvas({
   };
 
   return (
-    <main data-testid="document-canvas" className="h-full min-h-0 min-w-0 bg-zinc-50">
-      <div className={view === 'image' ? 'h-full' : 'hidden'}>
+    <main data-testid="document-canvas" className="flex h-full min-h-0 w-full min-w-0 flex-1 overflow-hidden bg-zinc-50">
+      <div className={view === 'image' ? 'h-full w-full min-w-0' : 'hidden'}>
         <ImageStudioView
           prompt={prompt}
           activePath={activePath}
           onReturn={() => onViewChange('editor')}
         />
       </div>
-      {view === 'video' && <div className="h-full">
+      {view === 'video' && <div className="h-full w-full min-w-0">
         <VideoStudioView prompt={prompt} onReturn={() => onViewChange('editor')} />
       </div>}
-      {view !== 'image' && view !== 'video' && <div className="flex h-full min-h-0 flex-col bg-white">
-        <div className="flex min-h-16 shrink-0 flex-col gap-3 border-b border-zinc-200 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+      {view !== 'image' && view !== 'video' && <div className="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col bg-white">
+        <div className="flex min-h-16 shrink-0 flex-col gap-3 border-b border-zinc-200 px-4 py-3 xl:flex-row xl:items-center xl:justify-between xl:px-5">
         <div className="flex min-w-0 items-center gap-3">
           <span className="text-zinc-900"><SectionIcon name={sectionName} size={22} /></span>
           <div className="min-w-0">
@@ -483,8 +483,8 @@ function DocumentCanvas({
             <p className="truncate text-xs text-zinc-500">{sectionDescription(sectionName)}</p>
           </div>
         </div>
-        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-          <div className="flex min-w-0 flex-1 items-center gap-1 rounded-xl bg-zinc-100 p-1 sm:flex-none" role="tablist" aria-label="Primary document view">
+        <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center xl:w-auto">
+          <div className="flex min-w-0 w-full items-center gap-1 rounded-xl bg-zinc-100 p-1 sm:w-auto sm:flex-1 xl:flex-none" role="tablist" aria-label="Primary document view">
           {([
             ['editor', 'Edit', ClipboardText],
             ['preview', 'Preview', Eye],
@@ -502,13 +502,13 @@ function DocumentCanvas({
             </button>
           ))}
           </div>
-          <label className="relative">
+          <label className="relative block min-w-0 w-full sm:flex-1 xl:w-auto xl:flex-none">
             <span className="sr-only">More document views</span>
             <select
               aria-label="More document views"
               value={['brief', 'structure', 'timeline', 'raw'].includes(view) ? view : ''}
               onChange={(event) => event.target.value && onViewChange(event.target.value as WorkspaceView)}
-              className="h-10 min-w-0 max-w-full flex-1 rounded-xl border border-zinc-200 bg-white px-2 text-xs font-medium text-zinc-600 outline-none hover:border-zinc-300 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 sm:h-11 sm:flex-none sm:px-3"
+              className="h-10 w-full min-w-0 rounded-xl border border-zinc-200 bg-white px-2 text-xs font-medium text-zinc-600 outline-none hover:border-zinc-300 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 sm:h-11 sm:px-3 xl:w-auto"
             >
               <option value="">More views</option>
               <option value="brief">Source brief</option>
@@ -682,7 +682,7 @@ function EnhancePanel({ prompt }: { prompt: Prompt }) {
   ];
 
   return (
-    <aside data-testid="enhance-panel" className="flex h-full min-h-0 flex-col bg-white">
+    <aside data-testid="enhance-panel" className="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-white">
       <div className="flex min-h-16 shrink-0 flex-wrap items-center gap-2 border-b border-zinc-200 px-4 py-3 sm:flex-nowrap sm:px-5 sm:py-0">
         <div className="flex items-center gap-2 text-sm font-semibold text-zinc-950"><ChatTeardropText size={19} /> Enhance</div>
         <select
@@ -845,8 +845,8 @@ export function EditorWorkspace({ prompt, onBack }: { prompt: Prompt; onBack: ()
   };
 
   return (
-    <div data-testid="editor-workspace" className="flex h-dvh min-h-0 flex-col overflow-hidden bg-zinc-50 text-zinc-950 antialiased">
-      {view !== 'video' && <header className="flex h-16 shrink-0 items-center gap-2 border-b border-zinc-200 bg-white px-3 sm:gap-3 sm:px-5">
+    <div data-testid="editor-workspace" className="flex h-dvh min-h-0 w-full min-w-0 max-w-none flex-col overflow-hidden bg-zinc-50 text-zinc-950 antialiased">
+      {view !== 'video' && <header className="flex h-16 w-full min-w-0 shrink-0 items-center gap-2 border-b border-zinc-200 bg-white px-3 sm:gap-3 sm:px-5">
         <button type="button" onClick={onBack} aria-label="Back to dashboard" className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950"><ArrowLeft size={19} /></button>
         <Logo size={30} className="hidden sm:inline-flex" />
         <div className="hidden h-7 w-px bg-zinc-200 sm:block" />
@@ -856,7 +856,7 @@ export function EditorWorkspace({ prompt, onBack }: { prompt: Prompt; onBack: ()
         </div>
         <div className="ml-auto flex items-center gap-1.5">
           <span className="hidden rounded-full bg-zinc-100 px-3 py-2 text-xs font-medium text-zinc-600 sm:inline-flex">{providerNames[currentProvider]}</span>
-          <details className="relative">
+          <details className="relative shrink-0">
             <summary aria-label="Document actions" className="flex h-10 cursor-pointer list-none items-center gap-2 rounded-full border border-zinc-200 px-3 text-xs font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-950"><span className="hidden sm:inline">Document actions</span><span className="sm:hidden">Actions</span><CaretDown size={14} /></summary>
             <div className="absolute right-0 top-11 z-40 w-44 rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl">
               <button type="button" onClick={copyJSON} className="flex h-10 w-full items-center gap-2 rounded-xl px-3 text-left text-xs font-medium text-zinc-700 hover:bg-zinc-50">{copied ? <Check size={16} /> : <Copy size={16} />}{copied ? 'Copied' : 'Copy JSON'}</button>
@@ -867,7 +867,7 @@ export function EditorWorkspace({ prompt, onBack }: { prompt: Prompt; onBack: ()
       </header>}
 
       {view !== 'video' && (
-        <nav className="shrink-0 border-b border-zinc-200 bg-white px-3 sm:px-5" aria-label="Prompt workflow">
+        <nav className="w-full min-w-0 shrink-0 border-b border-zinc-200 bg-white px-3 sm:px-5" aria-label="Prompt workflow">
           <div className="mx-auto grid h-16 w-full max-w-3xl grid-cols-3 gap-1 sm:gap-3" role="tablist">
             {([
               ['build', '1', 'Build', 'Shape the prompt'],
@@ -893,7 +893,7 @@ export function EditorWorkspace({ prompt, onBack }: { prompt: Prompt; onBack: ()
         </nav>
       )}
 
-      <div className={`${view === 'video' || (step === 'generate' && view !== 'image') ? 'hidden' : 'grid'} h-12 shrink-0 grid-cols-2 border-b border-zinc-200 bg-white lg:hidden`} role="tablist" aria-label="Editor panes">
+      <div className={`${view === 'video' || (step === 'generate' && view !== 'image') ? 'hidden' : 'grid'} h-12 w-full min-w-0 shrink-0 grid-cols-2 border-b border-zinc-200 bg-white lg:hidden`} role="tablist" aria-label="Editor panes">
         {compactTabs.map(([pane, label, Icon]) => (
           <button
             key={pane}
@@ -911,14 +911,14 @@ export function EditorWorkspace({ prompt, onBack }: { prompt: Prompt; onBack: ()
       {step === 'generate' && view !== 'image' && view !== 'video' && (
         <GenerationChooser prompt={prompt} onChoose={(nextView) => { changeView(nextView); setCompactPane('document'); }} />
       )}
-      <div className={`${step === 'generate' && view !== 'image' && view !== 'video' ? 'hidden' : 'grid'} min-h-0 flex-1 grid-cols-1 ${view === 'video' ? 'lg:grid-cols-1' : step === 'enhance' ? 'lg:grid-cols-[minmax(0,1fr)_360px]' : 'lg:grid-cols-[280px_minmax(0,1fr)]'}`}>
-        <div className={`${view === 'video' || step === 'enhance' ? 'hidden' : compactPane === 'map' ? 'flex' : 'hidden'} min-h-0 border-r border-zinc-200 ${view === 'video' || step === 'enhance' ? '' : 'lg:flex'}`}>
+      <div className={`${step === 'generate' && view !== 'image' && view !== 'video' ? 'hidden' : 'grid'} min-h-0 w-full min-w-0 flex-1 grid-cols-1 overflow-hidden ${view === 'video' ? 'lg:grid-cols-1' : step === 'enhance' ? 'lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22.5rem)]' : 'lg:grid-cols-[minmax(17.5rem,20rem)_minmax(0,1fr)]'}`}>
+        <div className={`${view === 'video' || step === 'enhance' ? 'hidden' : compactPane === 'map' ? 'flex' : 'hidden'} min-h-0 min-w-0 overflow-hidden border-r border-zinc-200 ${view === 'video' || step === 'enhance' ? '' : 'lg:flex'}`}>
           <PromptMap prompt={prompt} activePath={effectivePath} onSelect={selectSection} />
         </div>
-        <div className={`${compactPane === 'document' || view === 'video' ? 'flex' : 'hidden'} min-h-0 min-w-0 lg:flex`}>
+        <div className={`${compactPane === 'document' || view === 'video' ? 'flex' : 'hidden'} min-h-0 min-w-0 w-full overflow-hidden lg:flex`}>
           <DocumentCanvas prompt={prompt} activePath={effectivePath} view={view} onViewChange={changeView} />
         </div>
-        <div className={view === 'image' || view === 'video' || step !== 'enhance' ? 'hidden' : `${compactPane === 'enhance' ? 'flex' : 'hidden'} min-h-0 border-l border-zinc-200 lg:flex`}>
+        <div className={view === 'image' || view === 'video' || step !== 'enhance' ? 'hidden' : `${compactPane === 'enhance' ? 'flex' : 'hidden'} min-h-0 min-w-0 overflow-hidden border-l border-zinc-200 lg:flex`}>
           <EnhancePanel prompt={prompt} />
         </div>
       </div>

@@ -231,7 +231,7 @@ export function ImageExpanderPanel({ prompt, activePath, onReturn }: ImageExpand
   };
 
   return (
-    <section data-testid="image-studio" className="flex h-full min-h-0 flex-col bg-zinc-50">
+    <section data-testid="image-studio" className="flex h-full min-h-0 w-full max-w-full flex-col overflow-x-hidden bg-zinc-50">
       <header className="flex min-h-16 shrink-0 items-center gap-2 border-b border-zinc-200 bg-white px-3 sm:gap-3 sm:px-5">
         <button type="button" onClick={onReturn} aria-label="Back to editor" className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full px-2 text-xs font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 sm:px-3">
           <ArrowLeft size={16} /><span className="hidden sm:inline">Back to editor</span>
@@ -248,12 +248,12 @@ export function ImageExpanderPanel({ prompt, activePath, onReturn }: ImageExpand
         </span>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:overflow-hidden">
-        <div className="min-h-0 flex-none p-3 sm:p-6 lg:overflow-y-auto">
-          <div className="mx-auto max-w-3xl space-y-5">
+      <div className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto xl:grid xl:grid-cols-[minmax(0,1fr)_360px] xl:overflow-hidden">
+        <div className="min-h-0 w-full max-w-full flex-none p-3 sm:p-6 xl:overflow-y-auto">
+          <div className="mx-auto w-full max-w-3xl space-y-5">
             <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
               <div className="flex flex-col gap-3 border-b border-zinc-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-2 text-sm font-semibold text-zinc-950"><FileText size={18} /> Live prompt source</div>
                   <p className="mt-1 text-xs text-zinc-500">Edits in the document flow here automatically.</p>
                 </div>
@@ -276,9 +276,9 @@ export function ImageExpanderPanel({ prompt, activePath, onReturn }: ImageExpand
                 </div>
               </div>
               <div className="px-5 py-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-xs font-semibold text-violet-700">{sourceLabel}</p>
-                  <p className="text-[11px] text-zinc-400">{sourceCount(sourceValue)} values · {sourceText.length} characters</p>
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                  <p className="min-w-0 break-words text-xs font-semibold text-violet-700">{sourceLabel}</p>
+                  <p className="shrink-0 text-[11px] text-zinc-400">{sourceCount(sourceValue)} values · {sourceText.length} characters</p>
                 </div>
                 <pre data-testid="image-source-preview" className="mt-3 max-h-64 overflow-y-auto whitespace-pre-wrap break-words rounded-xl border border-zinc-200 bg-zinc-50 p-4 font-sans text-sm leading-6 text-zinc-700">{sourceText}</pre>
               </div>
@@ -296,8 +296,8 @@ export function ImageExpanderPanel({ prompt, activePath, onReturn }: ImageExpand
                 className="mt-3 w-full resize-none rounded-xl border border-zinc-200 px-4 py-3 text-sm leading-6 outline-none placeholder:text-zinc-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
               />
               <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs text-zinc-400">No copy-paste required. Scope and direction are combined automatically.</p>
-                <button type="button" onClick={prepareWithAI} disabled={isPreparing} className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full border border-zinc-200 px-4 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50">
+                <p className="max-w-xl text-xs leading-5 text-zinc-400">No copy-paste required. Scope and direction are combined automatically.</p>
+                <button type="button" onClick={prepareWithAI} disabled={isPreparing} className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-zinc-200 px-4 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 sm:h-10 sm:w-auto">
                   {isPreparing ? <SpinnerGap size={17} className="animate-spin" /> : <MagicWand size={17} />}
                   {isPreparing ? 'Preparing…' : 'Prepare with AI'}
                 </button>
@@ -332,7 +332,7 @@ export function ImageExpanderPanel({ prompt, activePath, onReturn }: ImageExpand
           </div>
         </div>
 
-        <aside className="min-h-0 shrink-0 border-t border-zinc-200 bg-white lg:overflow-y-auto lg:border-l lg:border-t-0">
+        <aside className="min-h-0 w-full max-w-full shrink-0 border-t border-zinc-200 bg-white xl:overflow-y-auto xl:border-l xl:border-t-0">
           <div className="border-b border-zinc-200 px-5 py-4">
             <div className="flex items-center gap-2 text-sm font-semibold text-zinc-950"><SlidersHorizontal size={18} /> Generation setup</div>
             <p className="mt-1 text-xs text-zinc-500">The active prompt stays attached through the whole run.</p>
