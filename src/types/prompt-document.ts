@@ -1,4 +1,5 @@
 import type { JsonObject, JsonValue, Prompt } from '@/types/prompt';
+import type { FilmProject } from '@/types/filmmaking';
 
 /** The shape of the input before it is organized by Avalon. */
 export type PromptSourceType = 'plain-text' | 'json';
@@ -112,6 +113,8 @@ export interface PromptDocument extends Prompt {
   mediaType: MediaType;
   revisions: DocumentRevision[];
   artifacts: GenerationArtifact[];
+  /** V3 filmmaking projection. Optional at the type boundary for old consumers; migrations always hydrate it. */
+  filmProject?: FilmProject;
 }
 
 export type PromptDocumentV2 = PromptDocument;
@@ -138,4 +141,3 @@ export interface CompiledPrompt {
   sections: Array<{ label: string; value: string }>;
   sourceHash?: string;
 }
-

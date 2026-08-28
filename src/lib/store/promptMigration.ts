@@ -17,6 +17,7 @@ import {
   stableHash,
   stableStringify,
 } from '@/lib/prompt-document';
+import { migrateFilmProject } from '@/lib/filmmaking/domain';
 
 export type SourceFormat = PromptSourceType;
 export { stableHash as hashText, stableStringify };
@@ -148,6 +149,7 @@ export const normalizePrompt = (raw: unknown, index = 0): PromptDocument => {
   const mediaType = ['image', 'video', 'audio', 'mixed', 'general'].includes(String(input.mediaType))
     ? input.mediaType as MediaType
     : projection.mediaType;
+  const filmProject = migrateFilmProject(input.filmProject, id, projection, source.hash, typeof input.name === 'string' ? input.name : projection.title);
   return {
     id,
     name: typeof input.name === 'string' && input.name ? input.name : `Untitled prompt ${index + 1}`,
@@ -161,6 +163,7 @@ export const normalizePrompt = (raw: unknown, index = 0): PromptDocument => {
     mediaType,
     revisions,
     artifacts: artifactsFor(source, input.artifacts, revisions[revisions.length - 1]?.id ?? ''),
+    filmProject,
   };
 };
 

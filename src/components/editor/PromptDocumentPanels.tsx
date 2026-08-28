@@ -2,23 +2,16 @@
 
 import { useMemo, useState } from 'react';
 import {
-  ArrowLeft,
-  Check,
-  CheckCircle,
   Clock,
-  Copy,
-  DownloadSimple,
   FilmStrip,
   FileText,
   FlowArrow,
-  Info,
-  MagicWand,
   PlayCircle,
   Sparkle,
-  WarningCircle,
 } from '@phosphor-icons/react';
 import { Prompt, JsonObject } from '@/types/prompt';
 import { ImageExpanderPanel } from '@/components/image/ImageExpanderPanel';
+import { ConnectedFilmmakingWorkspace } from '@/components/video/ConnectedFilmmakingWorkspace';
 import { usePromptStore } from '@/lib/store/promptStore';
 import { parsePromptBrief } from '@/lib/prompt-document';
 import type { StructuredProjection } from '@/types/prompt-document';
@@ -245,118 +238,9 @@ export function TimelineView({ prompt, onOpenVideo }: { prompt: Prompt; onOpenVi
   );
 }
 
-function compileSegment(prompt: Prompt, segment: TimelineSegment, continuity: string) {
-  return [`PROJECT: ${prompt.name}`, continuity && `CONTINUITY: ${continuity}`, `SEGMENT: ${segment.label}`, `TIMING: ${formatDuration(segment)}`, `DESCRIPTION: ${segment.description}`, segment.visual && `VISUAL: ${segment.visual}`, segment.motion && `MOTION: ${segment.motion}`, segment.transition && `TRANSITION: ${segment.transition}`, segment.audio && `AUDIO: ${segment.audio}`, segment.constraints?.length && `CONSTRAINTS: ${segment.constraints.join('; ')}`].filter(Boolean).join('\n');
-}
-
-function compileGlobalDirection(prompt: Prompt): string {
-  const projection = asRecord((prompt as DocumentShape).projection);
-  if (!projection) return sourceText(prompt);
-  const values = (key: string) => Array.isArray(projection[key])
-    ? projection[key].filter((item): item is string => typeof item === 'string').join(', ')
-    : textValue(projection[key]);
-  const audio = asRecord(projection.audio);
-  return [
-    textValue(projection.summary),
-    values('style') && `GLOBAL VISUAL LANGUAGE: ${values('style')}`,
-    values('mood') && `EMOTIONAL TONE: ${values('mood')}`,
-    values('palette') && `COLOR SYSTEM: ${values('palette')}`,
-    values('camera') && `CAMERA GRAMMAR: ${values('camera')}`,
-    audio && [textValue(audio.music), textValue(audio.soundDesign)].filter(Boolean).length
-      ? `AUDIO WORLD: ${[textValue(audio.music), textValue(audio.soundDesign)].filter(Boolean).join(' ')}`
-      : undefined,
-    values('constraints') && `PROJECT CONSTRAINTS: ${values('constraints')}`,
-  ].filter(Boolean).join('\n');
-}
-
+/** Player-first filmmaking surface backed by the V3 film project. */
 export function VideoStudioView({ prompt, onReturn }: { prompt: Prompt; onReturn: () => void }) {
-  const { addArtifact, updateArtifact } = usePromptStore();
-  const timeline = useMemo(() => extractTimeline(prompt), [prompt]);
-  const projectDirection = useMemo(() => compileGlobalDirection(prompt), [prompt]);
-  const [selectedId, setSelectedId] = useState(timeline[0]?.id || '');
-  const [continuity, setContinuity] = useState(projectDirection);
-  const [copied, setCopied] = useState(false);
-  const [generationStatus, setGenerationStatus] = useState<'idle' | 'queued' | 'running' | 'complete' | 'failed'>('idle');
-  const [generationError, setGenerationError] = useState('');
-  const [videoUrl, setVideoUrl] = useState('');
-  const selected = timeline.find((segment) => segment.id === selectedId) || timeline[0];
-  const compiled = selected ? compileSegment(prompt, selected, continuity) : '';
-  const falKey = typeof window !== 'undefined' && localStorage.getItem('avalon-image-gen-provider') === 'fal'
-    ? sessionStorage.getItem('avalon-image-gen-api-key') || ''
-    : '';
-
-  const copyCompiled = async () => { try { await navigator.clipboard.writeText(compiled); setCopied(true); window.setTimeout(() => setCopied(false), 1600); } catch { setCopied(false); } };
-  const exportCompiled = () => { const blob = new Blob([compiled], { type: 'text/plain' }); const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = `${prompt.name.replace(/\s+/g, '-').toLowerCase()}-storyboard.txt`; anchor.click(); URL.revokeObjectURL(url); };
-  const generateSegment = async () => {
-    if (!selected || !falKey || !compiled) return;
-    const duration = Math.max(2, Math.min(15, Math.round(Number(selected.end) - Number(selected.start) || 5)));
-    const document = prompt as DocumentShape & { source?: { hash?: string }; revisions?: Array<{ id: string }> };
-    const artifactId = addArtifact(prompt.id, {
-      kind: 'video',
-      mediaType: 'video',
-      sourceHash: document.source?.hash || '',
-      compiledPrompt: compiled,
-      provider: 'fal.ai',
-      model: 'fal-ai/wan/v2.7/text-to-video',
-      settings: { duration, aspect_ratio: '16:9', resolution: '1080p', segment_id: selected.id },
-      outputs: [],
-      status: 'queued',
-      revisionId: document.revisions?.at(-1)?.id,
-    });
-    setGenerationStatus('queued');
-    setGenerationError('');
-    setVideoUrl('');
-
-    try {
-      const call = async (body: Record<string, unknown>) => {
-        const response = await fetch('/api/video/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...body, apiKey: falKey }),
-        });
-        const payload = await response.json();
-        if (!response.ok || !payload.success) throw new Error(payload.error || 'Video request failed.');
-        return payload.data as Record<string, unknown>;
-      };
-      const submission = await call({ action: 'submit', prompt: compiled, duration, aspectRatio: '16:9', resolution: '1080p' });
-      const requestId = typeof submission.request_id === 'string' ? submission.request_id : '';
-      if (!requestId) throw new Error('fal.ai did not return a request id.');
-      updateArtifact(prompt.id, artifactId, { status: 'running', settings: { duration, aspect_ratio: '16:9', resolution: '1080p', segment_id: selected.id, request_id: requestId } });
-      setGenerationStatus('running');
-
-      for (let attempt = 0; attempt < 150; attempt += 1) {
-        await new Promise((resolve) => window.setTimeout(resolve, 2000));
-        const status = await call({ action: 'status', requestId });
-        if (status.status !== 'COMPLETED') continue;
-        if (typeof status.error === 'string' && status.error) throw new Error(status.error);
-        const result = await call({ action: 'result', requestId });
-        const video = asRecord(result.video);
-        const url = textValue(video?.url);
-        if (!url) throw new Error('The completed job did not include a video URL.');
-        setVideoUrl(url);
-        setGenerationStatus('complete');
-        updateArtifact(prompt.id, artifactId, {
-          status: 'complete',
-          outputs: [{ url, mimeType: textValue(video?.content_type) || 'video/mp4', label: selected.label }],
-        });
-        return;
-      }
-      throw new Error('The video job is still running. Its request id is saved in the artifact history.');
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Video generation failed.';
-      setGenerationStatus('failed');
-      setGenerationError(message);
-      updateArtifact(prompt.id, artifactId, { status: 'failed', error: message });
-    }
-  };
-
-  return (
-    <section data-testid="video-studio" className="flex h-full min-h-0 flex-col bg-zinc-50">
-      <header className="flex min-h-16 shrink-0 items-center gap-3 border-b border-zinc-200 bg-white px-4 sm:px-5"><button type="button" onClick={onReturn} className="inline-flex h-9 items-center gap-2 rounded-full px-2 text-xs font-medium text-zinc-600 hover:bg-zinc-100 sm:px-3"><ArrowLeft size={16} /><span className="sr-only">Back to editor</span><span className="hidden sm:inline">Back to editor</span></button><div className="flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 text-violet-700 shadow-sm"><FilmStrip size={19} /></div><div className="min-w-0 flex-1"><h2 className="text-sm font-semibold text-zinc-950">Video Studio</h2><p className="truncate text-xs text-zinc-500">Storyboard, target compiler and generation queue</p></div><span className={`hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium sm:inline-flex ${falKey ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}><Info size={14} /> {falKey ? 'fal.ai queue connected' : 'fal.ai not configured'}</span></header>
-      {/* eslint-disable-next-line react/no-unescaped-entities */}
-      <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_370px] lg:overflow-hidden"><div className="min-h-0 overflow-y-auto p-4 sm:p-6"><div className="mx-auto max-w-3xl space-y-5">{!falKey && <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4"><div className="flex gap-3"><WarningCircle size={19} className="mt-0.5 shrink-0 text-amber-700" /><div><p className="text-sm font-semibold text-amber-900">Storyboard and compilation are ready</p><p className="mt-1 text-xs leading-5 text-amber-800">Connect fal.ai in setup to send individual timeline segments to the verified video queue.</p></div></div></section>}<section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm"><div className="flex items-center gap-2 text-sm font-semibold text-zinc-950"><FlowArrow size={18} /> Global production direction</div><p className="mt-1 text-xs leading-5 text-zinc-500">The source brief's style, palette, camera, audio and project constraints are injected into every segment.</p><textarea aria-label="Global continuity" value={continuity} onChange={(event) => setContinuity(event.target.value)} rows={8} className="mt-3 w-full resize-none rounded-xl border border-zinc-200 px-3 py-3 text-sm leading-6 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100" /></section><section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between gap-3"><div><div className="flex items-center gap-2 text-sm font-semibold text-zinc-950"><FilmStrip size={18} /> Storyboard</div><p className="mt-1 text-xs text-zinc-500">Select a segment; its timing and local direction stay attached to the global system.</p></div><span className="text-xs text-zinc-400">{timeline.length} segments</span></div><div className="mt-4 grid gap-2">{timeline.map((segment, index) => <button key={segment.id} type="button" onClick={() => { setSelectedId(segment.id); setGenerationStatus('idle'); setVideoUrl(''); setGenerationError(''); }} aria-pressed={selected?.id === segment.id} className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-colors ${selected?.id === segment.id ? 'border-violet-300 bg-violet-50/60' : 'border-zinc-200 hover:bg-zinc-50'}`}><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-[10px] font-semibold text-zinc-500">{String(index + 1).padStart(2, '0')}</span><span className="min-w-0"><span className="block text-sm font-semibold text-zinc-900">{segment.label}</span><span className="mt-1 block truncate text-xs text-zinc-500">{compactText(segment.description, 130)}</span></span>{selected?.id === segment.id && <CheckCircle size={17} className="ml-auto shrink-0 text-violet-700" weight="fill" />}</button>)}</div></section></div></div><aside className="min-h-0 border-t border-zinc-200 bg-white lg:overflow-y-auto lg:border-l lg:border-t-0"><div className="border-b border-zinc-200 px-5 py-4"><div className="flex items-center gap-2 text-sm font-semibold text-zinc-950"><MagicWand size={18} /> Compiled segment</div><p className="mt-1 text-xs leading-5 text-zinc-500">Global direction and local scene instructions travel together.</p></div><div className="space-y-5 p-5">{selected ? <><div className="flex flex-wrap gap-2"><span className="rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-medium text-violet-700">{selected.label}</span><span className="rounded-full bg-zinc-100 px-2.5 py-1 text-[10px] font-medium text-zinc-500">{formatDuration(selected)}</span></div><pre data-testid="compiled-video-prompt" className="max-h-[420px] overflow-auto whitespace-pre-wrap rounded-xl border border-zinc-200 bg-zinc-950 p-4 font-mono text-xs leading-6 text-emerald-300">{compiled}</pre><div className="flex gap-2"><button type="button" onClick={copyCompiled} className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-full border border-zinc-200 text-xs font-medium text-zinc-700 hover:bg-zinc-50">{copied ? <Check size={15} /> : <Copy size={15} />}{copied ? 'Copied' : 'Copy prompt'}</button><button type="button" onClick={exportCompiled} className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-full border border-zinc-200 text-xs font-medium text-zinc-700 hover:bg-zinc-50"><DownloadSimple size={15} /> Export</button></div>{videoUrl && <video data-testid="generated-video" controls src={videoUrl} className="w-full rounded-xl border border-zinc-200 bg-black" />}{generationError && <p role="alert" className="rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs leading-5 text-red-700">{generationError}</p>}<button type="button" onClick={generateSegment} disabled={!falKey || generationStatus === 'queued' || generationStatus === 'running'} className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-zinc-950 text-sm font-medium text-white hover:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-500"><PlayCircle size={18} /> {generationStatus === 'queued' ? 'Queued…' : generationStatus === 'running' ? 'Generating…' : generationStatus === 'complete' ? 'Generate again' : 'Generate selected segment'}</button></> : <p className="text-sm text-zinc-500">Add a segment to begin.</p>}</div></aside></div>
-    </section>
-  );
+  return <ConnectedFilmmakingWorkspace prompt={prompt} onReturn={onReturn} />;
 }
 
 export function ImageStudioView({ prompt, activePath, onReturn }: { prompt: Prompt; activePath: string[]; onReturn: () => void }) {

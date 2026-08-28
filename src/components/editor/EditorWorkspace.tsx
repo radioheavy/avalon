@@ -474,10 +474,10 @@ function DocumentCanvas({
           onReturn={() => onViewChange('editor')}
         />
       </div>
-      <div className={view === 'video' ? 'h-full' : 'hidden'}>
+      {view === 'video' && <div className="h-full">
         <VideoStudioView prompt={prompt} onReturn={() => onViewChange('editor')} />
-      </div>
-      <div className={view === 'image' || view === 'video' ? 'hidden' : 'flex h-full min-h-0 flex-col bg-white'}>
+      </div>}
+      {view !== 'image' && view !== 'video' && <div className="flex h-full min-h-0 flex-col bg-white">
         <div className="flex min-h-16 shrink-0 flex-col gap-3 border-b border-zinc-200 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <span className="text-zinc-900"><SectionIcon name={sectionName} size={22} /></span>
@@ -536,7 +536,7 @@ function DocumentCanvas({
           <span>{displayPath(activePath)}</span>
           <span className="flex items-center gap-1.5 text-emerald-700"><CheckCircle size={13} weight="fill" /> Valid JSON</span>
         </div>
-      </div>
+      </div>}
     </main>
   );
 }
@@ -768,7 +768,7 @@ export function EditorWorkspace({ prompt, onBack }: { prompt: Prompt; onBack: ()
 
   return (
     <div data-testid="editor-workspace" className="flex h-dvh min-h-0 flex-col overflow-hidden bg-zinc-50 text-zinc-950 antialiased">
-      <header className="flex h-16 shrink-0 items-center gap-3 border-b border-zinc-200 bg-white px-3 sm:px-5">
+      {view !== 'video' && <header className="flex h-16 shrink-0 items-center gap-3 border-b border-zinc-200 bg-white px-3 sm:px-5">
         <button type="button" onClick={onBack} aria-label="Back to dashboard" className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950"><ArrowLeft size={19} /></button>
         <Logo size={30} className="hidden sm:inline-flex" />
         <div className="hidden h-7 w-px bg-zinc-200 sm:block" />
@@ -783,15 +783,14 @@ export function EditorWorkspace({ prompt, onBack }: { prompt: Prompt; onBack: ()
             {view === 'image' ? <ArrowLeft size={16} /> : <ImageSquare size={16} />}
             {view === 'image' ? 'Back to editor' : 'Generate image'}
           </button>
-          <button type="button" onClick={() => { setView(view === 'video' ? 'editor' : 'video'); setCompactPane('document'); }} className="inline-flex h-9 items-center gap-2 rounded-full border border-zinc-200 px-3 text-xs font-medium text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950">
-            {view === 'video' ? <ArrowLeft size={16} /> : <FilmStrip size={16} />}
-            {view === 'video' ? 'Back to editor' : 'Video studio'}
+          <button type="button" onClick={() => { setView('video'); setCompactPane('document'); }} className="inline-flex h-9 items-center gap-2 rounded-full border border-zinc-200 px-3 text-xs font-medium text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950">
+            <FilmStrip size={16} /> Video studio
           </button>
           <span className="rounded-full bg-zinc-100 px-3 py-2 text-xs font-medium text-zinc-600">{providerNames[currentProvider]}</span>
         </div>
-      </header>
+      </header>}
 
-      <div className={`grid h-11 shrink-0 ${view === 'image' || view === 'video' ? 'grid-cols-2' : 'grid-cols-5'} border-b border-zinc-200 bg-white xl:hidden`} role="tablist" aria-label="Editor panes">
+      <div className={`${view === 'video' ? 'hidden' : 'grid'} h-11 shrink-0 ${view === 'image' ? 'grid-cols-2' : 'grid-cols-5'} border-b border-zinc-200 bg-white xl:hidden`} role="tablist" aria-label="Editor panes">
         {compactTabs.map(([pane, label, Icon]) => (
           <button
             key={pane}
@@ -811,11 +810,11 @@ export function EditorWorkspace({ prompt, onBack }: { prompt: Prompt; onBack: ()
         ))}
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[280px_minmax(0,1fr)_340px]">
-        <div className={`${compactPane === 'map' ? 'flex' : 'hidden'} min-h-0 border-r border-zinc-200 xl:flex`}>
+      <div className={`grid min-h-0 flex-1 grid-cols-1 ${view === 'video' ? 'xl:grid-cols-1' : 'xl:grid-cols-[280px_minmax(0,1fr)_340px]'}`}>
+        <div className={`${view === 'video' ? 'hidden' : compactPane === 'map' ? 'flex' : 'hidden'} min-h-0 border-r border-zinc-200 ${view === 'video' ? '' : 'xl:flex'}`}>
           <PromptMap prompt={prompt} activePath={effectivePath} onSelect={selectSection} />
         </div>
-        <div className={`${compactPane === 'document' ? 'flex' : 'hidden'} min-h-0 min-w-0 xl:flex ${view === 'image' || view === 'video' ? 'xl:col-span-2' : ''}`}>
+        <div className={`${compactPane === 'document' || view === 'video' ? 'flex' : 'hidden'} min-h-0 min-w-0 xl:flex ${view === 'image' ? 'xl:col-span-2' : ''}`}>
           <DocumentCanvas prompt={prompt} activePath={effectivePath} view={view} onViewChange={setView} />
         </div>
         <div className={view === 'image' || view === 'video' ? 'hidden' : `${compactPane === 'enhance' ? 'flex' : 'hidden'} min-h-0 border-l border-zinc-200 xl:flex`}>

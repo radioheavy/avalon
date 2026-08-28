@@ -18,12 +18,36 @@ import {
 } from '@/lib/store/promptMigration';
 import { createDocumentRevision, parsePromptBrief } from '@/lib/prompt-document';
 import type { TimelineSegment } from '@/types/prompt-document';
+import type {
+  Asset,
+  FilmProject,
+  FrameReference,
+  GenerationJob,
+  GenerationJobInput,
+  SceneDirection,
+  Take,
+  TakeInput,
+} from '@/types/filmmaking';
+import {
+  addAsset as addFilmAsset,
+  addGenerationJob as addFilmGenerationJob,
+  createFilmProjectFromProjection,
+  createTakeForJob as createFilmTakeForJob,
+  markDownstreamNeedsReview as markFilmDownstreamNeedsReview,
+  reconcileFilmProjectFromProjection,
+  selectSceneTake as selectFilmSceneTake,
+  setSceneContinuity as setFilmSceneContinuity,
+  updateGenerationJob as updateFilmGenerationJob,
+  updateSceneDirection as updateFilmSceneDirection,
+  updateTake as updateFilmTake,
+} from '@/lib/filmmaking/domain';
 
 type PromptUpdate = Partial<Prompt> & Partial<Pick<PromptDocument, 'projectionStatus' | 'mediaType'>> & {
   source?: Partial<PromptSource>;
   projection?: Partial<PromptProjection>;
   revisions?: PromptRevision[];
   artifacts?: PromptArtifact[];
+  filmProject?: FilmProject;
 };
 
 export interface CreateDocumentOptions {
@@ -61,12 +85,23 @@ interface PromptStore {
   updatePrompt: (id: string, updates: PromptUpdate) => void;
   updateSource: (id: string, raw: string, type?: PromptSource['type']) => void;
   updateProjection: (id: string, updates: Partial<PromptProjection>) => void;
+  updateFilmProject: (id: string, updater: (project: FilmProject) => FilmProject) => void;
+  updateSceneDirection: (id: string, sceneId: string, updates: Partial<SceneDirection>) => void;
+  addFilmAsset: (id: string, asset: Omit<Asset, 'id' | 'createdAt'> & Partial<Pick<Asset, 'id' | 'createdAt'>>) => string | null;
+  addGenerationJob: (id: string, input: GenerationJobInput) => string | null;
+  updateGenerationJob: (id: string, jobId: string, updates: Partial<GenerationJob>) => void;
+  createTakeForJob: (id: string, jobId: string, input: TakeInput) => string | null;
+  updateTake: (id: string, sceneId: string, takeId: string, updates: Partial<Take>) => void;
+  selectSceneTake: (id: string, sceneId: string, takeId: string) => void;
+  setSceneContinuity: (id: string, sceneId: string, role: 'in' | 'out', reference?: FrameReference) => void;
+  markDownstreamNeedsReview: (id: string, sceneId: string) => void;
   addArtifact: (promptId: string, artifact: ArtifactInput) => string;
   updateArtifact: (promptId: string, artifactId: string, updates: Partial<PromptArtifact>) => void;
   removeArtifact: (promptId: string, artifactId: string) => void;
   deletePrompt: (id: string) => void;
   setCurrentPrompt: (id: string | null) => void;
   getCurrentPrompt: () => Prompt | null;
+  getFilmProject: (id?: string) => FilmProject | null;
 
   // Actions - Editor
   setSelectedPath: (path: string[] | null) => void;
@@ -127,6 +162,7 @@ export const usePromptStore = create<PromptStore>()(
           mediaType: projection.mediaType,
           revisions: [revision],
           artifacts: [],
+          filmProject: createFilmProjectFromProjection(id, projection, { title: name, mediaType: projection.mediaType }),
         } as PromptDocument;
         set((state) => ({
           prompts: [...state.prompts, newPrompt],
@@ -181,6 +217,9 @@ export const usePromptStore = create<PromptStore>()(
                     : artifact
                 )
               : document.artifacts;
+            const filmProject = hasProjectionUpdate && projectionChanged && document.filmProject
+              ? reconcileFilmProjectFromProjection(document.filmProject, nextProjection)
+              : document.filmProject;
             const plainUpdates: PromptUpdate = { ...updates };
             delete plainUpdates.source;
             delete plainUpdates.projection;
@@ -202,6 +241,7 @@ export const usePromptStore = create<PromptStore>()(
               mediaType: updates.mediaType ?? nextProjection.mediaType,
               revisions,
               artifacts,
+              filmProject,
               updatedAt: now,
             } as PromptDocument;
           }),
@@ -219,6 +259,81 @@ export const usePromptStore = create<PromptStore>()(
         const prompt = get().prompts.find((item) => item.id === id) as PromptDocument | undefined;
         if (!prompt) return;
         get().updatePrompt(id, { projection: updates });
+      },
+
+      updateFilmProject: (id, updater) => {
+        set((state) => ({
+          prompts: state.prompts.map((item) => {
+            if (item.id !== id) return item;
+            const document = item as PromptDocument;
+            if (!document.filmProject) return item;
+            return { ...document, filmProject: updater(document.filmProject), updatedAt: new Date() } as Prompt;
+          }),
+        }));
+      },
+
+      updateSceneDirection: (id, sceneId, updates) => {
+        const document = get().prompts.find((item) => item.id === id) as PromptDocument | undefined;
+        if (!document?.filmProject) return;
+        get().updateFilmProject(id, (project) => updateFilmSceneDirection(project, sceneId, updates));
+      },
+
+      addFilmAsset: (id, asset) => {
+        const document = get().prompts.find((item) => item.id === id) as PromptDocument | undefined;
+        if (!document?.filmProject) return null;
+        const next = addFilmAsset(document.filmProject, asset);
+        const created = next.assets[next.assets.length - 1];
+        get().updateFilmProject(id, () => next);
+        return created?.id ?? null;
+      },
+
+      addGenerationJob: (id, input) => {
+        const document = get().prompts.find((item) => item.id === id) as PromptDocument | undefined;
+        if (!document?.filmProject) return null;
+        const next = addFilmGenerationJob(document.filmProject, input);
+        const created = next.jobs[next.jobs.length - 1];
+        get().updateFilmProject(id, () => next);
+        return created?.id ?? null;
+      },
+
+      updateGenerationJob: (id, jobId, updates) => {
+        const document = get().prompts.find((item) => item.id === id) as PromptDocument | undefined;
+        if (!document?.filmProject) return;
+        get().updateFilmProject(id, (project) => updateFilmGenerationJob(project, jobId, updates));
+      },
+
+      createTakeForJob: (id, jobId, input) => {
+        const document = get().prompts.find((item) => item.id === id) as PromptDocument | undefined;
+        if (!document?.filmProject) return null;
+        const next = createFilmTakeForJob(document.filmProject, jobId, input);
+        const job = next.jobs.find((candidate) => candidate.id === jobId);
+        const created = job?.takeId ? next.scenes.flatMap((scene) => scene.takes).find((take) => take.id === job.takeId) : undefined;
+        get().updateFilmProject(id, () => next);
+        return created?.id ?? null;
+      },
+
+      updateTake: (id, sceneId, takeId, updates) => {
+        const document = get().prompts.find((item) => item.id === id) as PromptDocument | undefined;
+        if (!document?.filmProject) return;
+        get().updateFilmProject(id, (project) => updateFilmTake(project, sceneId, takeId, updates));
+      },
+
+      selectSceneTake: (id, sceneId, takeId) => {
+        const document = get().prompts.find((item) => item.id === id) as PromptDocument | undefined;
+        if (!document?.filmProject) return;
+        get().updateFilmProject(id, (project) => selectFilmSceneTake(project, sceneId, takeId));
+      },
+
+      setSceneContinuity: (id, sceneId, role, reference) => {
+        const document = get().prompts.find((item) => item.id === id) as PromptDocument | undefined;
+        if (!document?.filmProject) return;
+        get().updateFilmProject(id, (project) => setFilmSceneContinuity(project, sceneId, role, reference));
+      },
+
+      markDownstreamNeedsReview: (id, sceneId) => {
+        const document = get().prompts.find((item) => item.id === id) as PromptDocument | undefined;
+        if (!document?.filmProject) return;
+        get().updateFilmProject(id, (project) => markFilmDownstreamNeedsReview(project, sceneId));
       },
 
       addArtifact: (promptId, artifact) => {
@@ -288,6 +403,12 @@ export const usePromptStore = create<PromptStore>()(
       getCurrentPrompt: () => {
         const state = get();
         return state.prompts.find((p) => p.id === state.currentPromptId) || null;
+      },
+
+      getFilmProject: (id) => {
+        const state = get();
+        const prompt = state.prompts.find((item) => item.id === (id ?? state.currentPromptId)) as PromptDocument | undefined;
+        return prompt?.filmProject ?? null;
       },
 
       // Editor actions
@@ -377,7 +498,7 @@ export const usePromptStore = create<PromptStore>()(
     }),
     {
       name: 'avalon-storage',
-      version: 2,
+      version: 3,
       migrate: (persistedState) => migratePromptStore(persistedState),
       partialize: (state) => ({
         prompts: state.prompts,
