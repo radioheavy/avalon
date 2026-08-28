@@ -175,7 +175,7 @@ function PromptMap({
             type="button"
             onClick={() => setShowAdd(true)}
             aria-label="Add custom section"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950"
           >
             <Plus size={17} />
           </button>
@@ -200,7 +200,7 @@ function PromptMap({
               <button
                 type="button"
                 onClick={() => onSelect(entry.path)}
-                className={`w-full border-l-2 px-3 py-3 text-left transition-colors ${
+                className={`w-full border-l-2 px-3 py-3 pr-11 text-left transition-colors ${
                   active
                     ? 'border-violet-600 bg-violet-50/70 text-zinc-950'
                     : 'border-transparent text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950'
@@ -230,7 +230,7 @@ function PromptMap({
                     if (next) onSelect(next.path);
                   }
                 }}
-                className="absolute bottom-2 right-2 hidden h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:bg-red-50 hover:text-red-600 group-hover:flex group-focus-within:flex"
+                className="absolute bottom-2 right-2 inline-flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 hover:bg-red-50 hover:text-red-600 sm:hidden sm:group-hover:flex sm:group-focus-within:flex"
               >
                 <Trash size={14} />
               </button>
@@ -355,8 +355,8 @@ function StructuredFields({ value, path, depth = 0 }: { value: JsonValue; path: 
 
         return (
           <div key={pathKey} className="border-b border-zinc-100 bg-white">
-            <div className="flex items-center gap-2 px-5 py-3">
-              <button type="button" onClick={() => setOpen((state) => ({ ...state, [pathKey]: !expanded }))} className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100" aria-expanded={expanded}>
+            <div className="flex flex-wrap items-center gap-2 px-4 py-3 sm:px-5">
+              <button type="button" onClick={() => setOpen((state) => ({ ...state, [pathKey]: !expanded }))} className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100" aria-expanded={expanded}>
                 {expanded ? <CaretDown size={16} /> : <CaretRight size={16} />}
               </button>
               <div className="min-w-0 flex-1">
@@ -373,20 +373,20 @@ function StructuredFields({ value, path, depth = 0 }: { value: JsonValue; path: 
                     if (!expanded) setOpen((state) => ({ ...state, [pathKey]: true }));
                   }
                 }}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900"
                 aria-label={`Add inside ${key}`}
               >
                 <Plus size={15} />
               </button>
-              <button type="button" onClick={() => deleteValue(childPath)} className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-red-50 hover:text-red-600" aria-label={`Delete ${key}`}>
+              <button type="button" onClick={() => deleteValue(childPath)} className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-zinc-400 hover:bg-red-50 hover:text-red-600" aria-label={`Delete ${key}`}>
                 <Trash size={15} />
               </button>
             </div>
             {expanded && (
-              <div className="ml-5">
+              <div className="ml-3 sm:ml-5">
                 <StructuredFields value={child} path={childPath} depth={depth + 1} />
                 {addingTo === pathKey && (
-                  <div className="flex gap-2 border-t border-zinc-100 px-5 py-3">
+                  <div className="flex flex-wrap gap-2 border-t border-zinc-100 px-5 py-3">
                     <input autoFocus value={newKey} onChange={(event) => setNewKey(event.target.value)} placeholder="New field key" className="h-10 min-w-0 flex-1 rounded-xl border border-zinc-200 px-3 text-sm outline-none focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200" />
                     <button
                       type="button"
@@ -396,7 +396,7 @@ function StructuredFields({ value, path, depth = 0 }: { value: JsonValue; path: 
                         addObjectKey(childPath, newKey.trim(), '');
                         setAddingTo(null);
                       }}
-                      className="rounded-xl bg-zinc-950 px-4 text-sm font-medium text-white hover:bg-zinc-800"
+                      className="h-10 rounded-xl bg-zinc-950 px-4 text-sm font-medium text-white hover:bg-zinc-800"
                     >
                       Add
                     </button>
@@ -476,15 +476,15 @@ function DocumentCanvas({
       </div>}
       {view !== 'image' && view !== 'video' && <div className="flex h-full min-h-0 flex-col bg-white">
         <div className="flex min-h-16 shrink-0 flex-col gap-3 border-b border-zinc-200 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <span className="text-zinc-900"><SectionIcon name={sectionName} size={22} /></span>
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight text-zinc-950">{humanize(sectionName)}</h2>
-            <p className="text-xs text-zinc-500">{sectionDescription(sectionName)}</p>
+          <div className="min-w-0">
+            <h2 className="truncate text-lg font-semibold tracking-tight text-zinc-950">{humanize(sectionName)}</h2>
+            <p className="truncate text-xs text-zinc-500">{sectionDescription(sectionName)}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 rounded-xl bg-zinc-100 p-1" role="tablist" aria-label="Primary document view">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <div className="flex min-w-0 flex-1 items-center gap-1 rounded-xl bg-zinc-100 p-1 sm:flex-none" role="tablist" aria-label="Primary document view">
           {([
             ['editor', 'Edit', ClipboardText],
             ['preview', 'Preview', Eye],
@@ -495,7 +495,7 @@ function DocumentCanvas({
               role="tab"
               aria-selected={view === value}
               onClick={() => onViewChange(value)}
-              className={`inline-flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-medium transition-colors ${view === value ? 'bg-white text-zinc-950 shadow-sm' : 'text-zinc-500 hover:text-zinc-900'}`}
+              className={`inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-lg px-2 text-xs font-medium transition-colors sm:flex-none sm:px-3 ${view === value ? 'bg-white text-zinc-950 shadow-sm' : 'text-zinc-500 hover:text-zinc-900'}`}
             >
               <Icon size={15} />
               {label}
@@ -508,7 +508,7 @@ function DocumentCanvas({
               aria-label="More document views"
               value={['brief', 'structure', 'timeline', 'raw'].includes(view) ? view : ''}
               onChange={(event) => event.target.value && onViewChange(event.target.value as WorkspaceView)}
-              className="h-11 rounded-xl border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-600 outline-none hover:border-zinc-300 focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+              className="h-10 min-w-0 max-w-full flex-1 rounded-xl border border-zinc-200 bg-white px-2 text-xs font-medium text-zinc-600 outline-none hover:border-zinc-300 focus:border-violet-400 focus:ring-2 focus:ring-violet-100 sm:h-11 sm:flex-none sm:px-3"
             >
               <option value="">More views</option>
               <option value="brief">Source brief</option>
@@ -527,7 +527,7 @@ function DocumentCanvas({
         {view === 'timeline' && <TimelineView prompt={prompt} onOpenVideo={() => onViewChange('video')} />}
         {view === 'preview' && sectionValue !== undefined && <PreviewSurface value={sectionValue} />}
         {view === 'raw' && (
-          <div className="flex min-h-full flex-col bg-zinc-950 p-4 sm:p-6">
+          <div className="flex min-h-full flex-col bg-zinc-950 p-3 sm:p-6">
             <textarea
               aria-label="Raw JSON editor"
               value={rawDraft}
@@ -535,16 +535,16 @@ function DocumentCanvas({
               spellCheck={false}
               className="min-h-[520px] flex-1 resize-none bg-transparent font-mono text-[13px] leading-6 text-emerald-300 outline-none"
             />
-            <div className="flex items-center justify-between gap-3 border-t border-white/10 pt-4">
-              <p className={`text-xs ${rawError ? 'text-red-300' : 'text-zinc-500'}`}>{rawError || 'Edit the complete document. Changes are validated before saving.'}</p>
-              <button type="button" onClick={applyRaw} className="h-10 shrink-0 rounded-full bg-white px-5 text-sm font-medium text-zinc-950 hover:bg-zinc-100">Apply JSON</button>
+            <div className="flex flex-col items-stretch gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className={`min-w-0 text-xs leading-5 ${rawError ? 'text-red-300' : 'text-zinc-500'}`}>{rawError || 'Edit the complete document. Changes are validated before saving.'}</p>
+              <button type="button" onClick={applyRaw} className="h-11 shrink-0 rounded-full bg-white px-5 text-sm font-medium text-zinc-950 hover:bg-zinc-100 sm:h-10">Apply JSON</button>
             </div>
           </div>
         )}
         </div>
-        <div className="flex h-9 shrink-0 items-center justify-between border-t border-zinc-200 bg-zinc-50 px-4 text-[11px] text-zinc-500">
-          <span>{displayPath(activePath)}</span>
-          <span className="flex items-center gap-1.5 text-emerald-700"><CheckCircle size={13} weight="fill" /> Valid JSON</span>
+        <div className="flex h-10 shrink-0 items-center justify-between gap-3 border-t border-zinc-200 bg-zinc-50 px-4 text-[11px] text-zinc-500">
+          <span className="min-w-0 truncate">{displayPath(activePath)}</span>
+          <span className="flex shrink-0 items-center gap-1.5 text-emerald-700"><CheckCircle size={13} weight="fill" /> Valid JSON</span>
         </div>
       </div>}
     </main>
@@ -559,11 +559,11 @@ function GenerationChooser({
   onChoose: (view: 'image' | 'video') => void;
 }) {
   return (
-    <main className="flex h-full min-h-0 flex-1 overflow-y-auto bg-zinc-50 px-5 py-8 sm:px-8 sm:py-12">
+    <main className="flex h-full min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-zinc-50 px-4 py-6 sm:px-8 sm:py-12">
       <div className="mx-auto w-full max-w-4xl">
         <div className="max-w-2xl">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-700">Step 3 · Generate</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-950">Turn the prompt into an output</h2>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl">Turn the prompt into an output</h2>
           <p className="mt-3 text-sm leading-6 text-zinc-600">
             Your structured prompt is ready. Choose the kind of output you want to create; Avalon will carry the current document into the right studio.
           </p>
@@ -573,7 +573,7 @@ function GenerationChooser({
           <button
             type="button"
             onClick={() => onChoose('image')}
-            className="group rounded-3xl border border-zinc-200 bg-white p-6 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-lg hover:shadow-zinc-900/[0.05] focus-visible:ring-2 focus-visible:ring-violet-500"
+            className="group rounded-3xl border border-zinc-200 bg-white p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-lg hover:shadow-zinc-900/[0.05] focus-visible:ring-2 focus-visible:ring-violet-500 sm:p-6"
           >
             <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-700"><ImageSquare size={24} /></span>
             <h3 className="mt-6 text-xl font-semibold text-zinc-950">Generate image</h3>
@@ -584,7 +584,7 @@ function GenerationChooser({
           <button
             type="button"
             onClick={() => onChoose('video')}
-            className="group rounded-3xl border border-zinc-200 bg-white p-6 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-lg hover:shadow-zinc-900/[0.05] focus-visible:ring-2 focus-visible:ring-cyan-500"
+            className="group rounded-3xl border border-zinc-200 bg-white p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-lg hover:shadow-zinc-900/[0.05] focus-visible:ring-2 focus-visible:ring-cyan-500 sm:p-6"
           >
             <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-700"><FilmStrip size={24} /></span>
             <h3 className="mt-6 text-xl font-semibold text-zinc-950">Create video</h3>
@@ -683,7 +683,7 @@ function EnhancePanel({ prompt }: { prompt: Prompt }) {
 
   return (
     <aside data-testid="enhance-panel" className="flex h-full min-h-0 flex-col bg-white">
-      <div className="flex h-16 shrink-0 items-center justify-between border-b border-zinc-200 px-5">
+      <div className="flex min-h-16 shrink-0 flex-wrap items-center gap-2 border-b border-zinc-200 px-4 py-3 sm:flex-nowrap sm:px-5 sm:py-0">
         <div className="flex items-center gap-2 text-sm font-semibold text-zinc-950"><ChatTeardropText size={19} /> Enhance</div>
         <select
           value={selectedModel}
@@ -692,7 +692,7 @@ function EnhancePanel({ prompt }: { prompt: Prompt }) {
             sessionStorage.setItem('avalon-ai-model', event.target.value);
           }}
           aria-label="AI model"
-          className="max-w-40 rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-1.5 text-xs text-zinc-600 outline-none focus:border-zinc-400"
+          className="min-w-0 max-w-[min(10rem,45vw)] flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-2 text-xs text-zinc-600 outline-none focus:border-zinc-400 sm:flex-none"
         >
           {models.map((model) => <option key={model.id} value={model.id}>{model.name}</option>)}
         </select>
@@ -846,7 +846,7 @@ export function EditorWorkspace({ prompt, onBack }: { prompt: Prompt; onBack: ()
 
   return (
     <div data-testid="editor-workspace" className="flex h-dvh min-h-0 flex-col overflow-hidden bg-zinc-50 text-zinc-950 antialiased">
-      {view !== 'video' && <header className="flex h-16 shrink-0 items-center gap-3 border-b border-zinc-200 bg-white px-3 sm:px-5">
+      {view !== 'video' && <header className="flex h-16 shrink-0 items-center gap-2 border-b border-zinc-200 bg-white px-3 sm:gap-3 sm:px-5">
         <button type="button" onClick={onBack} aria-label="Back to dashboard" className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950"><ArrowLeft size={19} /></button>
         <Logo size={30} className="hidden sm:inline-flex" />
         <div className="hidden h-7 w-px bg-zinc-200 sm:block" />
@@ -854,10 +854,10 @@ export function EditorWorkspace({ prompt, onBack }: { prompt: Prompt; onBack: ()
           <h1 className="truncate text-sm font-semibold text-zinc-950">{prompt.name}</h1>
           <p className="flex items-center gap-1.5 text-[11px] text-zinc-400"><CheckCircle size={12} className="text-emerald-600" weight="fill" /> Saved locally</p>
         </div>
-        <div className="hidden items-center gap-1.5 sm:flex">
-          <span className="rounded-full bg-zinc-100 px-3 py-2 text-xs font-medium text-zinc-600">{providerNames[currentProvider]}</span>
+        <div className="ml-auto flex items-center gap-1.5">
+          <span className="hidden rounded-full bg-zinc-100 px-3 py-2 text-xs font-medium text-zinc-600 sm:inline-flex">{providerNames[currentProvider]}</span>
           <details className="relative">
-            <summary className="flex h-9 cursor-pointer list-none items-center gap-2 rounded-full border border-zinc-200 px-3 text-xs font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-950">Document actions <CaretDown size={14} /></summary>
+            <summary aria-label="Document actions" className="flex h-10 cursor-pointer list-none items-center gap-2 rounded-full border border-zinc-200 px-3 text-xs font-medium text-zinc-600 hover:bg-zinc-50 hover:text-zinc-950"><span className="hidden sm:inline">Document actions</span><span className="sm:hidden">Actions</span><CaretDown size={14} /></summary>
             <div className="absolute right-0 top-11 z-40 w-44 rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl">
               <button type="button" onClick={copyJSON} className="flex h-10 w-full items-center gap-2 rounded-xl px-3 text-left text-xs font-medium text-zinc-700 hover:bg-zinc-50">{copied ? <Check size={16} /> : <Copy size={16} />}{copied ? 'Copied' : 'Copy JSON'}</button>
               <button type="button" onClick={exportJSON} className="flex h-10 w-full items-center gap-2 rounded-xl px-3 text-left text-xs font-medium text-zinc-700 hover:bg-zinc-50"><DownloadSimple size={16} /> Export JSON</button>
@@ -893,7 +893,7 @@ export function EditorWorkspace({ prompt, onBack }: { prompt: Prompt; onBack: ()
         </nav>
       )}
 
-      <div className={`${view === 'video' || (step === 'generate' && view !== 'image') ? 'hidden' : 'grid'} h-11 shrink-0 grid-cols-2 border-b border-zinc-200 bg-white xl:hidden`} role="tablist" aria-label="Editor panes">
+      <div className={`${view === 'video' || (step === 'generate' && view !== 'image') ? 'hidden' : 'grid'} h-12 shrink-0 grid-cols-2 border-b border-zinc-200 bg-white lg:hidden`} role="tablist" aria-label="Editor panes">
         {compactTabs.map(([pane, label, Icon]) => (
           <button
             key={pane}
@@ -911,14 +911,14 @@ export function EditorWorkspace({ prompt, onBack }: { prompt: Prompt; onBack: ()
       {step === 'generate' && view !== 'image' && view !== 'video' && (
         <GenerationChooser prompt={prompt} onChoose={(nextView) => { changeView(nextView); setCompactPane('document'); }} />
       )}
-      <div className={`${step === 'generate' && view !== 'image' && view !== 'video' ? 'hidden' : 'grid'} min-h-0 flex-1 grid-cols-1 ${view === 'video' ? 'xl:grid-cols-1' : step === 'enhance' ? 'xl:grid-cols-[minmax(0,1fr)_360px]' : 'xl:grid-cols-[280px_minmax(0,1fr)]'}`}>
-        <div className={`${view === 'video' || step === 'enhance' ? 'hidden' : compactPane === 'map' ? 'flex' : 'hidden'} min-h-0 border-r border-zinc-200 ${view === 'video' || step === 'enhance' ? '' : 'xl:flex'}`}>
+      <div className={`${step === 'generate' && view !== 'image' && view !== 'video' ? 'hidden' : 'grid'} min-h-0 flex-1 grid-cols-1 ${view === 'video' ? 'lg:grid-cols-1' : step === 'enhance' ? 'lg:grid-cols-[minmax(0,1fr)_360px]' : 'lg:grid-cols-[280px_minmax(0,1fr)]'}`}>
+        <div className={`${view === 'video' || step === 'enhance' ? 'hidden' : compactPane === 'map' ? 'flex' : 'hidden'} min-h-0 border-r border-zinc-200 ${view === 'video' || step === 'enhance' ? '' : 'lg:flex'}`}>
           <PromptMap prompt={prompt} activePath={effectivePath} onSelect={selectSection} />
         </div>
-        <div className={`${compactPane === 'document' || view === 'video' ? 'flex' : 'hidden'} min-h-0 min-w-0 xl:flex`}>
+        <div className={`${compactPane === 'document' || view === 'video' ? 'flex' : 'hidden'} min-h-0 min-w-0 lg:flex`}>
           <DocumentCanvas prompt={prompt} activePath={effectivePath} view={view} onViewChange={changeView} />
         </div>
-        <div className={view === 'image' || view === 'video' || step !== 'enhance' ? 'hidden' : `${compactPane === 'enhance' ? 'flex' : 'hidden'} min-h-0 border-l border-zinc-200 xl:flex`}>
+        <div className={view === 'image' || view === 'video' || step !== 'enhance' ? 'hidden' : `${compactPane === 'enhance' ? 'flex' : 'hidden'} min-h-0 border-l border-zinc-200 lg:flex`}>
           <EnhancePanel prompt={prompt} />
         </div>
       </div>

@@ -232,12 +232,11 @@ export function ImageExpanderPanel({ prompt, activePath, onReturn }: ImageExpand
 
   return (
     <section data-testid="image-studio" className="flex h-full min-h-0 flex-col bg-zinc-50">
-      <header className="flex min-h-16 shrink-0 items-center gap-3 border-b border-zinc-200 bg-white px-5">
-        <button type="button" onClick={onReturn} className="inline-flex h-9 items-center gap-2 rounded-full px-3 text-xs font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950">
-          <ArrowLeft size={16} /> Back to editor
+      <header className="flex min-h-16 shrink-0 items-center gap-2 border-b border-zinc-200 bg-white px-3 sm:gap-3 sm:px-5">
+        <button type="button" onClick={onReturn} aria-label="Back to editor" className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full px-2 text-xs font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 sm:px-3">
+          <ArrowLeft size={16} /><span className="hidden sm:inline">Back to editor</span>
         </button>
-        <div className="h-6 w-px bg-zinc-200 sm:hidden" />
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 text-violet-700 shadow-sm">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-200 text-violet-700 shadow-sm">
           <ImageSquare size={19} />
         </div>
         <div className="min-w-0 flex-1">
@@ -249,8 +248,8 @@ export function ImageExpanderPanel({ prompt, activePath, onReturn }: ImageExpand
         </span>
       </header>
 
-      <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_360px] lg:overflow-hidden">
-        <div className="min-h-0 overflow-y-auto p-4 sm:p-6">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:overflow-hidden">
+        <div className="min-h-0 flex-none p-3 sm:p-6 lg:overflow-y-auto">
           <div className="mx-auto max-w-3xl space-y-5">
             <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
               <div className="flex flex-col gap-3 border-b border-zinc-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -258,7 +257,7 @@ export function ImageExpanderPanel({ prompt, activePath, onReturn }: ImageExpand
                   <div className="flex items-center gap-2 text-sm font-semibold text-zinc-950"><FileText size={18} /> Live prompt source</div>
                   <p className="mt-1 text-xs text-zinc-500">Edits in the document flow here automatically.</p>
                 </div>
-                <div className="flex rounded-xl bg-zinc-100 p-1" role="tablist" aria-label="Image prompt source">
+                <div className="flex w-full rounded-xl bg-zinc-100 p-1 sm:w-auto" role="tablist" aria-label="Image prompt source">
                   {([
                     ['document', 'Full prompt'],
                     ['section', 'Current section'],
@@ -269,7 +268,7 @@ export function ImageExpanderPanel({ prompt, activePath, onReturn }: ImageExpand
                       role="tab"
                       aria-selected={scope === value}
                       onClick={() => setScope(value)}
-                      className={`h-9 rounded-lg px-3 text-xs font-medium ${scope === value ? 'bg-white text-zinc-950 shadow-sm' : 'text-zinc-500 hover:text-zinc-900'}`}
+                      className={`h-10 min-w-0 flex-1 rounded-lg px-2 text-xs font-medium sm:flex-none sm:px-3 ${scope === value ? 'bg-white text-zinc-950 shadow-sm' : 'text-zinc-500 hover:text-zinc-900'}`}
                     >
                       {label}
                     </button>
@@ -333,12 +332,12 @@ export function ImageExpanderPanel({ prompt, activePath, onReturn }: ImageExpand
           </div>
         </div>
 
-        <aside className="min-h-0 border-t border-zinc-200 bg-white lg:overflow-y-auto lg:border-l lg:border-t-0">
+        <aside className="min-h-0 shrink-0 border-t border-zinc-200 bg-white lg:overflow-y-auto lg:border-l lg:border-t-0">
           <div className="border-b border-zinc-200 px-5 py-4">
             <div className="flex items-center gap-2 text-sm font-semibold text-zinc-950"><SlidersHorizontal size={18} /> Generation setup</div>
             <p className="mt-1 text-xs text-zinc-500">The active prompt stays attached through the whole run.</p>
           </div>
-          <div className="space-y-6 p-5">
+          <div className="space-y-6 p-4 sm:p-5">
             <section>
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400">Provider</p>
               <div className="mt-2 flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5">
