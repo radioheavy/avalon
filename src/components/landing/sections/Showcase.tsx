@@ -11,89 +11,78 @@ export function Showcase() {
 
   return (
     <section className="relative mx-auto w-full max-w-6xl px-6 sm:px-8" id="showcase">
-      <div className="mb-10 flex flex-col items-center text-center">
-        <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">
-          See it in action
-        </span>
-        <h2 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900 sm:text-4xl">
-          Built for the way prompts actually get written
-        </h2>
-        <p className="mt-4 max-w-2xl text-base text-zinc-600">
-          One workspace, four modes. Switch the way you think, keep the context.
+      <div className="grid gap-8 border-t border-zinc-200 pt-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-end">
+        <div>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-violet-700">
+            Product, not a promise
+          </span>
+          <h2 className="mt-3 max-w-2xl text-3xl font-semibold tracking-[-0.035em] text-zinc-950 sm:text-4xl">
+            A working surface for complicated prompts.
+          </h2>
+        </div>
+        <p className="max-w-md text-sm leading-6 text-zinc-600 lg:pb-1">
+          Move between structured editing, expansion, image analysis, and saved work without
+          losing the thread.
         </p>
       </div>
 
-      {/* Tabs */}
-      <div className="mb-8 flex flex-wrap items-center justify-center gap-2">
-        {SCREENSHOTS.map((s) => {
-          const isActive = s.key === active;
-          return (
-            <button
-              key={s.key}
-              type="button"
-              onClick={() => setActive(s.key)}
-              className={cn(
-                'rounded-full border px-4 py-2 text-sm font-medium transition-all',
-                isActive
-                  ? 'border-zinc-900 bg-zinc-900 text-white shadow-sm'
-                  : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:text-zinc-900'
-              )}
-              aria-pressed={isActive}
-            >
-              {s.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Frame */}
-      <div className="relative">
-        {/* Soft outer glow */}
-        <div
-          aria-hidden
-          className="absolute -inset-x-6 -inset-y-4 -z-10 rounded-[2.5rem] bg-gradient-to-tr from-violet-200/40 via-indigo-200/30 to-cyan-200/40 blur-2xl"
-        />
-
-        <div className="relative overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-2xl shadow-zinc-900/5">
-          {/* Caption strip */}
-          <div className="flex items-center justify-between border-b border-zinc-100 bg-zinc-50/60 px-5 py-3 text-xs text-zinc-500">
-            <span className="font-mono">avalon · {current.key}</span>
-            <span>{current.description}</span>
-          </div>
-
-          {/* Screenshot with crossfade */}
-          <div className="relative aspect-[16/9] w-full bg-zinc-50">
-            {SCREENSHOTS.map((s) => (
-              <Image
+      <div className="mt-8 border-b border-zinc-200">
+        <div className="flex min-w-max gap-5 overflow-x-auto" role="tablist" aria-label="Avalon views">
+          {SCREENSHOTS.map((s) => {
+            const isActive = s.key === active;
+            return (
+              <button
                 key={s.key}
-                src={s.src}
-                alt={s.alt}
-                fill
-                priority={s.key === 'editor'}
-                sizes="(min-width: 1024px) 1024px, 100vw"
+                type="button"
+                role="tab"
+                id={`showcase-tab-${s.key}`}
+                aria-controls={`showcase-panel-${s.key}`}
+                aria-selected={isActive}
+                onClick={() => setActive(s.key)}
                 className={cn(
-                  'object-cover object-top transition-opacity duration-500 ease-out',
-                  s.key === active ? 'opacity-100' : 'opacity-0'
+                  'relative whitespace-nowrap border-b-2 px-0 pb-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-600 focus-visible:ring-offset-2',
+                  isActive
+                    ? 'border-violet-700 text-zinc-950'
+                    : 'border-transparent text-zinc-500 hover:text-zinc-900'
                 )}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Floating mini cards (purely visual cue) */}
-        <div className="pointer-events-none absolute -left-4 top-20 hidden rotate-[-4deg] rounded-xl border border-zinc-200/80 bg-white/80 p-3 shadow-lg shadow-zinc-900/5 backdrop-blur sm:block">
-          <div className="flex items-center gap-2 text-xs text-zinc-500">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            Auto-saved locally
-          </div>
-        </div>
-        <div className="pointer-events-none absolute -right-4 bottom-12 hidden rotate-[3deg] rounded-xl border border-zinc-200/80 bg-white/80 p-3 shadow-lg shadow-zinc-900/5 backdrop-blur sm:block">
-          <div className="flex items-center gap-2 text-xs text-zinc-500">
-            <span className="font-mono text-zinc-700">⌘ K</span>
-            command palette
-          </div>
+              >
+                {s.label}
+              </button>
+            );
+          })}
         </div>
       </div>
+
+      <figure className="mt-6 overflow-hidden border border-zinc-300 bg-white">
+        <div className="flex flex-col gap-1 border-b border-zinc-200 bg-[#f8f7f4] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <figcaption className="font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-600">
+            Avalon / {current.label}
+          </figcaption>
+          <p className="text-xs text-zinc-600">{current.description}</p>
+        </div>
+
+        <div
+          id={`showcase-panel-${active}`}
+          role="tabpanel"
+          aria-labelledby={`showcase-tab-${active}`}
+          className="relative aspect-[16/9] w-full bg-zinc-100"
+        >
+          {SCREENSHOTS.map((s) => (
+            <Image
+              key={s.key}
+              src={s.src}
+              alt={s.alt}
+              fill
+              priority={s.key === 'editor'}
+              sizes="(min-width: 1280px) 1152px, (min-width: 640px) calc(100vw - 64px), calc(100vw - 48px)"
+              className={cn(
+                'object-cover object-top transition-opacity duration-300 ease-out',
+                s.key === active ? 'opacity-100' : 'pointer-events-none opacity-0'
+              )}
+            />
+          ))}
+        </div>
+      </figure>
     </section>
   );
 }

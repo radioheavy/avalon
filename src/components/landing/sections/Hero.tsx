@@ -1,9 +1,8 @@
-import { ArrowRight, Github, Sparkles } from 'lucide-react';
+import Image from 'next/image';
+import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Logo } from '@/components/brand/Logo';
-import { BRAND, LINKS } from '../constants';
-import { Background } from '../Background';
+import { LINKS } from '../constants';
 
 type HeroProps = {
   onStart: () => void;
@@ -12,99 +11,80 @@ type HeroProps = {
 export function Hero({ onStart }: HeroProps) {
   return (
     <section className="relative isolate overflow-hidden">
-      <Background />
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden bg-[#faf9f6]">
+        <div className="absolute inset-x-0 top-0 h-px bg-zinc-900" />
+        <div className="absolute inset-y-0 left-1/2 hidden w-px bg-zinc-200/80 xl:block" />
+        <div className="absolute left-[calc(50%-36rem)] top-0 hidden h-24 w-px bg-violet-700 lg:block" />
+      </div>
 
-      {/* Top bar */}
-      <header className="relative mx-auto flex w-full max-w-6xl items-center justify-between px-6 pt-6 sm:px-8">
-        <Logo size={32} withWordmark />
-        <nav className="hidden items-center gap-7 text-sm text-zinc-600 md:flex">
-          <a href="#features" className="transition-colors hover:text-zinc-900">
-            Features
+      <header className="relative mx-auto flex w-full max-w-7xl items-center justify-between border-b border-zinc-200 px-5 py-4 sm:px-8 lg:px-10">
+        <Logo size={30} withWordmark />
+        <nav aria-label="Primary navigation" className="hidden items-center gap-8 text-sm text-zinc-600 md:flex">
+          <a href="#features" className="underline-offset-4 transition-colors hover:text-zinc-950 hover:underline">
+            Capabilities
           </a>
-          <a href="#providers" className="transition-colors hover:text-zinc-900">
+          <a href="#providers" className="underline-offset-4 transition-colors hover:text-zinc-950 hover:underline">
             Providers
           </a>
           <a
             href={LINKS.github}
             target="_blank"
             rel="noopener noreferrer"
-            className="transition-colors hover:text-zinc-900"
+            className="underline-offset-4 transition-colors hover:text-zinc-950 hover:underline"
           >
             GitHub
           </a>
         </nav>
-        <div className="flex items-center gap-2">
-          <a
-            href={LINKS.github}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hidden text-sm text-zinc-600 transition-colors hover:text-zinc-900 sm:inline"
-          >
-            v0.3.0
-          </a>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={onStart}
-            className="rounded-full text-zinc-700 hover:text-zinc-900"
-          >
-            Open editor
-            <ArrowRight className="ml-1 h-3.5 w-3.5" />
-          </Button>
-        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onStart}
+          className="rounded-sm border-zinc-900 bg-zinc-900 px-3 text-white shadow-none hover:bg-violet-700 hover:text-white"
+        >
+          Open editor
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Button>
       </header>
 
-      {/* Hero content */}
-      <div className="relative mx-auto flex w-full max-w-5xl flex-col items-center px-6 pb-24 pt-20 text-center sm:px-8 sm:pt-28 lg:pt-32">
-        <Badge
-          variant="secondary"
-          className="mb-7 gap-2 rounded-full border-zinc-200/80 bg-white/70 px-3.5 py-1.5 text-xs font-medium text-zinc-700 shadow-sm backdrop-blur"
-        >
-          <Sparkles className="h-3.5 w-3.5 text-violet-600" />
-          Now with prompts.chat and Wiro.ai
-        </Badge>
+      <div className="relative mx-auto grid w-full max-w-7xl grid-cols-1 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <div className="flex min-w-0 flex-col justify-between px-5 pb-12 pt-14 sm:px-8 sm:pb-16 sm:pt-20 lg:min-h-[620px] lg:border-r lg:border-zinc-200 lg:px-10 lg:py-20">
+          <div>
+            <p className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+              <span className="h-px w-8 bg-violet-700" />
+              Avalon / Prompt workspace
+            </p>
+            <h1 className="mt-7 max-w-xl text-balance text-4xl font-semibold leading-[1.02] tracking-[-0.055em] text-zinc-950 sm:text-6xl lg:text-[4.5rem]">
+              Give every visual idea a working structure.
+            </h1>
+            <p className="mt-7 max-w-lg text-pretty text-base leading-7 text-zinc-600 sm:text-lg sm:leading-8">
+              Avalon is a structured prompt editor for image and video workflows. Move from a rough brief to an editable document, then refine and generate with the providers you choose.
+            </p>
+          </div>
 
-        <h1 className="max-w-3xl text-balance text-5xl font-semibold leading-[1.05] tracking-tight text-zinc-900 sm:text-6xl lg:text-7xl">
-          The visual prompt editor for{' '}
-          <span className="bg-gradient-to-br from-violet-600 via-indigo-500 to-cyan-500 bg-clip-text text-transparent">
-            AI image creators
-          </span>
-        </h1>
-
-        <p className="mt-7 max-w-2xl text-pretty text-lg leading-relaxed text-zinc-600 sm:text-xl">
-          {BRAND.tagline}. Write, expand, and reverse-engineer prompts as a navigable tree — with
-          the providers you already use.
-        </p>
-
-        <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:gap-4">
-          <Button
-            onClick={onStart}
-            size="lg"
-            className="h-12 rounded-full bg-zinc-900 px-6 text-sm font-medium text-white shadow-sm transition-all hover:bg-zinc-800 hover:shadow-md"
-          >
-            Open the editor
-            <ArrowRight className="ml-1.5 h-4 w-4" />
-          </Button>
-          <Button
-            onClick={() => window.open(LINKS.github, '_blank')}
-            size="lg"
-            variant="ghost"
-            className="h-12 rounded-full px-5 text-sm font-medium text-zinc-700 hover:bg-zinc-900/5 hover:text-zinc-900"
-          >
-            <Github className="mr-2 h-4 w-4" />
-            View on GitHub
-          </Button>
+          <div className="mt-10">
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button onClick={onStart} size="lg" className="h-12 rounded-sm bg-zinc-950 px-5 text-sm font-medium text-white shadow-none hover:bg-violet-700">
+                Start a prompt
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+              <a href={LINKS.github} target="_blank" rel="noopener noreferrer" className="inline-flex h-12 items-center justify-center rounded-sm border border-zinc-300 px-5 text-sm font-medium text-zinc-800 transition-colors hover:border-zinc-950 hover:bg-white">
+                Read the source
+              </a>
+            </div>
+            <dl className="mt-10 grid max-w-lg grid-cols-1 border-t border-zinc-200 text-sm text-zinc-600 sm:grid-cols-3">
+              <div className="border-b border-zinc-200 py-4 sm:border-b-0 sm:border-r sm:pr-4"><dt className="font-medium text-zinc-950">Build</dt><dd className="mt-1 leading-5">Shape the brief</dd></div>
+              <div className="border-b border-zinc-200 py-4 sm:border-b-0 sm:border-r sm:px-4"><dt className="font-medium text-zinc-950">Refine</dt><dd className="mt-1 leading-5">Improve with AI</dd></div>
+              <div className="py-4 sm:pl-4"><dt className="font-medium text-zinc-950">Generate</dt><dd className="mt-1 leading-5">Use your own keys</dd></div>
+            </dl>
+          </div>
         </div>
 
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-zinc-500">
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            No account required
-          </span>
-          <span className="hidden h-3 w-px bg-zinc-300 sm:inline-block" />
-          <span>Local-first — keys never leave your device</span>
-          <span className="hidden h-3 w-px bg-zinc-300 sm:inline-block" />
-          <span>Open source, CC BY-NC</span>
+        <div className="relative flex min-w-0 items-center px-5 pb-10 pt-2 sm:px-8 sm:pb-14 lg:px-10 lg:py-20">
+          <div className="w-full border border-zinc-300 bg-white p-1.5 shadow-[8px_8px_0_0_rgb(39_39_42_/_0.08)] sm:p-2">
+            <div className="flex h-9 items-center justify-between border-b border-zinc-200 px-3 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-500"><span>Structured editor</span><span className="text-violet-700">Live document</span></div>
+            <Image src="/a/new-3-editor.png" alt="Avalon structured prompt editor with prompt map and editable duration field" width={3024} height={1828} priority sizes="(min-width: 1024px) 52vw, (min-width: 640px) 80vw, 92vw" className="block h-auto w-full object-cover object-top" />
+          </div>
+          <p className="absolute bottom-3 right-5 hidden bg-[#faf9f6] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500 sm:block lg:bottom-12 lg:right-10">Local-first / no account</p>
         </div>
       </div>
     </section>

@@ -3,34 +3,38 @@ import { STEPS } from '../constants';
 export function Workflow() {
   return (
     <section className="relative mx-auto w-full max-w-6xl px-6 sm:px-8" id="workflow">
-      <div className="mb-12 flex flex-col items-center text-center">
-        <span className="text-xs font-medium uppercase tracking-widest text-zinc-500">
-          How it works
+      <div className="border-t border-zinc-200 pt-5 sm:pt-6">
+        <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-violet-700">
+          03 / A repeatable pass
         </span>
-        <h2 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-900 sm:text-4xl">
-          Up and running in three steps
-        </h2>
       </div>
 
-      <ol className="mx-auto grid max-w-4xl grid-cols-1 gap-8 md:grid-cols-3 md:gap-6">
-        {STEPS.map((s, i) => (
-          <li key={s.n} className="relative">
-            <div className="flex items-baseline gap-3">
-              <span className="font-mono text-xs text-zinc-400">{s.n}</span>
-              <h3 className="text-base font-semibold text-zinc-900">{s.title}</h3>
-            </div>
-            <p className="mt-2 pl-7 text-sm leading-relaxed text-zinc-600">{s.body}</p>
+      <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16">
+        <div>
+          <h2 className="max-w-lg text-4xl font-semibold tracking-[-0.04em] text-zinc-950 sm:text-5xl">
+            Build the prompt. Refine the decisions. Generate with intent.
+          </h2>
+          <p className="mt-5 max-w-md text-base leading-7 text-zinc-600">
+            The workflow stays legible from an early thought to a result you can compare, reuse,
+            or hand off.
+          </p>
+        </div>
 
-            {/* connector dot for non-last items (desktop only) */}
-            {i < STEPS.length - 1 && (
-              <span
-                aria-hidden
-                className="absolute right-[-12px] top-2 hidden h-px w-6 bg-gradient-to-r from-zinc-300 to-transparent md:block"
-              />
-            )}
-          </li>
-        ))}
-      </ol>
+        <ol className="border-y border-zinc-200">
+          {STEPS.map((step) => (
+            <li
+              key={step.n}
+              className="grid grid-cols-[2.75rem_minmax(0,1fr)] gap-x-4 border-b border-zinc-200 py-6 last:border-b-0 sm:grid-cols-[4.25rem_minmax(0,1fr)] sm:gap-x-5 sm:py-7"
+            >
+              <span className="font-mono text-sm tabular-nums text-violet-700">{step.n}</span>
+              <div>
+                <h3 className="text-lg font-medium tracking-tight text-zinc-950">{step.title}</h3>
+                <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-600">{step.body}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
     </section>
   );
 }

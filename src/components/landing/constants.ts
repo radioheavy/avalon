@@ -3,7 +3,7 @@
 
 export const BRAND = {
   name: 'Avalon',
-  tagline: 'The AI prompt editor for image creators',
+  tagline: 'A structured prompt workspace for image and video',
   short: 'Avalon',
 } as const;
 
@@ -57,33 +57,33 @@ export type ScreenshotKey = (typeof SCREENSHOTS)[number]['key'];
 
 export const FEATURES = [
   {
-    title: 'Visual JSON editor',
-    body: 'A tree view for complex prompts. Click, edit, and never wrestle with raw JSON again.',
+    title: 'Structured editing',
+    body: 'Work through title, subject, style, constraints, and timeline as distinct decisions—not one fragile block of text.',
     icon: 'TreePine',
   },
   {
-    title: 'AI expansion',
-    body: 'Start with a one-liner. Avalon shapes it into a production-ready prompt in seconds.',
+    title: 'Useful expansion',
+    body: 'Begin with a short direction, then develop a fuller brief you can still inspect and edit field by field.',
     icon: 'Sparkles',
   },
   {
-    title: 'Reverse engineer',
-    body: 'Drop a reference image and recover a starting prompt you can iterate on.',
+    title: 'Reference, translated',
+    body: 'Use a reference image to establish a starting point, then make its visual choices your own.',
     icon: 'Wand2',
   },
   {
-    title: 'Multi-provider',
-    body: 'Anthropic, OpenAI, Google, fal.ai, Wiro.ai. Bring your own key, switch per task.',
+    title: 'The right studio',
+    body: 'Keep image and video work in dedicated studios, with the controls and context each medium needs.',
     icon: 'KeyRound',
   },
   {
-    title: 'Community prompts',
-    body: 'Browse prompts.chat directly inside Avalon. Remix what works, ship faster.',
+    title: 'A research shelf',
+    body: 'Browse prompts.chat without leaving the workspace. Import an idea, study its structure, and adapt it.',
     icon: 'Library',
   },
   {
-    title: 'Local-first & open',
-    body: 'Your keys and prompts stay on your device. CC BY-NC, no telemetry, no account.',
+    title: 'Your setup, kept local',
+    body: 'Bring your own provider key. Prompts and credentials stay on your device, without an Avalon account.',
     icon: 'ShieldCheck',
   },
 ] as const;
@@ -99,17 +99,17 @@ export const PROVIDERS = [
 export const STEPS = [
   {
     n: '01',
-    title: 'Pick a provider',
-    body: 'Anthropic, OpenAI, Google, fal.ai, or Wiro.ai — switch any time.',
+    title: 'Build the structure',
+    body: 'Start with the brief, then give its subject, medium, composition, and constraints their own place to live.',
   },
   {
     n: '02',
-    title: 'Drop your key',
-    body: 'Stored locally in your browser. Never sent to a server we run.',
+    title: 'Refine the decisions',
+    body: 'Open a single field when it needs attention, use AI where it helps, and keep the rest of the prompt intact.',
   },
   {
     n: '03',
-    title: 'Start crafting',
-    body: 'Write, expand, reverse-engineer, generate. Save what works.',
+    title: 'Generate and compare',
+    body: 'Send the finished direction to the image or video studio, review the result, then return with a sharper next pass.',
   },
 ] as const;
