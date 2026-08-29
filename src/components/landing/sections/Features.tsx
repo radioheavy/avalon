@@ -1,45 +1,115 @@
+import { CheckCircle2 } from 'lucide-react';
 import {
-  GitBranch,
-  KeyRound,
+  BookText,
+  LayoutGrid,
   Library,
+  Layers,
   ShieldCheck,
-  Sparkles,
   Wand2,
 } from 'lucide-react';
 import { SectionHeader } from '@/components/landing/SectionHeader';
 
+const SECTIONS = ['Subject', 'Camera', 'Lighting', 'Composition', 'Style', 'Negative'];
+const VIEWS = ['Preview', 'Source brief', 'Structure', 'Timeline', 'Raw JSON'];
+
 const FEATURES = [
   {
-    title: 'Structured editing',
-    body: 'Work through title, subject, style, constraints, and timeline as distinct decisions—not one fragile block of text.',
-    Icon: GitBranch,
+    title: 'Three-pane workspace',
+    body: 'A navigable prompt map, a typed field editor for the active section, and alternate views (Preview, Source brief, Structure, Timeline, Raw JSON) sit side by side. On narrow screens the same surface collapses into labeled tabs.',
+    Icon: LayoutGrid,
   },
   {
-    title: 'Useful expansion',
-    body: 'Begin with a short direction, then develop a fuller brief you can still inspect and edit field by field.',
-    Icon: Sparkles,
+    title: 'Source brief stays separate',
+    body: 'Your original wording lives in the Source brief; the working projection is what Refine and Generate act on. Edit the source and the structure is flagged stale until you re-derive with Rebuild structure or Organize with AI.',
+    Icon: BookText,
   },
   {
     title: 'Reference, translated',
-    body: 'Use a reference image to establish a starting point, then make its visual choices your own.',
+    body: 'Drop in a reference image and Avalon analyzes it into a JSON structure you can open in the editor — same document model as a hand-written brief.',
     Icon: Wand2,
   },
   {
-    title: 'The right studio',
-    body: 'Keep image and video work in dedicated studios, with the controls and context each medium needs.',
-    Icon: KeyRound,
+    title: 'Two studios, one document',
+    body: 'Image Studio produces stills from the live structure; Video Studio turns the same document into a film project with scenes, takes, and continuity frames. Every take is signed by the producing revision.',
+    Icon: Layers,
   },
   {
     title: 'A research shelf',
-    body: 'Browse prompts.chat without leaving the workspace. Import an idea, study its structure, and adapt it.',
+    body: 'Browse prompts.chat without leaving the workspace. Import an idea as a JSON object, study its structure, and adapt it field by field.',
     Icon: Library,
   },
   {
-    title: 'Your setup, kept local',
-    body: 'Bring your own provider key. Prompts and credentials stay on your device, without an Avalon account.',
+    title: 'Browser-local by default',
+    body: 'Prompts and revisions live in this browser, the workspace is ready without an Avalon account, and your provider key is only forwarded to the Next.js API route for the action you actually run.',
     Icon: ShieldCheck,
   },
 ];
+
+function WorkspaceMockup() {
+  return (
+    <figure className="mt-8 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50/40 sm:mt-10">
+      <div className="grid grid-cols-1 sm:grid-cols-12">
+        <div className="border-b border-zinc-200 bg-white p-4 sm:col-span-3 sm:border-b-0 sm:border-r">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-400">
+            Prompt map
+          </p>
+          <ul className="mt-3 space-y-1.5 text-[12px]">
+            {SECTIONS.map((label, index) => {
+              const active = label === 'Lighting';
+              return (
+                <li
+                  key={label}
+                  className={`flex items-center gap-2 rounded-sm px-1.5 py-0.5 ${
+                    active
+                      ? 'border-l-2 border-violet-600 bg-violet-50/60 pl-2 font-medium text-zinc-900'
+                      : 'text-zinc-600'
+                  }`}
+                >
+                  <span className="truncate">{label}</span>
+                  {active ? (
+                    <CheckCircle2 className="ml-auto h-3 w-3 shrink-0 text-emerald-600" />
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+        <div className="border-b border-zinc-200 bg-white p-4 sm:col-span-6 sm:border-b-0 sm:border-r">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-400">
+            Field editor · Lighting
+          </p>
+          <p className="mt-3 text-[10px] uppercase tracking-[0.14em] text-zinc-400">string</p>
+          <div className="mt-1 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900">
+            Low morning side light
+          </div>
+          <p className="mt-2 font-mono text-[10px] text-zinc-400">prompt.lighting</p>
+          <div className="mt-3 flex items-center gap-2 rounded-md border border-violet-200 bg-violet-50/50 px-2.5 py-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-violet-600" />
+            <p className="text-[11px] text-zinc-700">
+              Selected for{' '}
+              <span className="font-mono uppercase tracking-[0.12em] text-violet-700">
+                Refine
+              </span>
+            </p>
+          </div>
+        </div>
+        <div className="bg-white p-4 sm:col-span-3">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-400">Views</p>
+          <ul className="mt-3 space-y-1.5 text-[12px] text-zinc-600">
+            {VIEWS.map((view) => (
+              <li key={view} className="flex items-center gap-2">
+                <span className="truncate">{view}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      <figcaption className="border-t border-zinc-200 bg-zinc-50/60 px-4 py-2 text-[10px] font-mono uppercase tracking-[0.14em] text-zinc-500">
+        Build · three-pane workspace · Source brief stays separate
+      </figcaption>
+    </figure>
+  );
+}
 
 export function Features() {
   return (
@@ -48,8 +118,10 @@ export function Features() {
         number="01"
         eyebrow="The working surface"
         title={<>A prompt is a working document, not a magic sentence.</>}
-        description="Avalon gives image and video work a place to be specific: define the brief, keep the decisions visible, and return to the parts worth changing."
+        description="Avalon gives image and video work a place to be specific: a navigable prompt map, a typed field editor, and a source brief you can re-derive on demand — all on the same record."
       />
+
+      <WorkspaceMockup />
 
       <div className="mt-10 border-y border-zinc-200 sm:mt-12">
         {FEATURES.map(({ title, body, Icon }, index) => (
