@@ -96,12 +96,53 @@ export const FEATURES = [
   },
 ] as const;
 
-export const PROVIDERS = [
-  { name: 'Anthropic', key: 'anthropic' },
-  { name: 'OpenAI', key: 'openai' },
-  { name: 'Google Gemini', key: 'google' },
-  { name: 'fal.ai', key: 'fal' },
-  { name: 'Wiro.ai', key: 'wiro' },
+export type ProviderCapability = 'LLM' | 'Image' | 'Video';
+
+export type Provider = {
+  name: string;
+  key: 'anthropic' | 'openai' | 'google' | 'fal' | 'wiro';
+  usedFor: readonly ProviderCapability[];
+  role: string;
+  href: string;
+  needsSecret?: boolean;
+};
+
+export const PROVIDERS: readonly Provider[] = [
+  {
+    name: 'Anthropic',
+    key: 'anthropic',
+    usedFor: ['LLM'],
+    role: 'Refine a single field',
+    href: LINKS.anthropic,
+  },
+  {
+    name: 'OpenAI',
+    key: 'openai',
+    usedFor: ['LLM'],
+    role: 'Refine a single field',
+    href: LINKS.openai,
+  },
+  {
+    name: 'Google Gemini',
+    key: 'google',
+    usedFor: ['LLM'],
+    role: 'Refine a single field',
+    href: LINKS.google,
+  },
+  {
+    name: 'fal.ai',
+    key: 'fal',
+    usedFor: ['Image', 'Video'],
+    role: 'Image Studio + Video Studio',
+    href: 'https://fal.ai/dashboard/keys',
+  },
+  {
+    name: 'Wiro.ai',
+    key: 'wiro',
+    usedFor: ['Image', 'Video'],
+    role: 'Image Studio + Video Studio',
+    href: LINKS.wiro,
+  },
 ] as const;
 
 export const STEPS = [
