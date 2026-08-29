@@ -108,16 +108,16 @@ export const STEPS = [
   {
     n: '01',
     title: 'Build the structure',
-    body: 'Start with the brief, then give its subject, medium, composition, and constraints their own place to live.',
+    body: 'Edit subject, camera, light, style, and constraints as a navigable document. The source brief and its projection stay attached to the same record, ready to revise.',
   },
   {
     n: '02',
-    title: 'Refine the decisions',
-    body: 'Open a single field when it needs attention, use AI where it helps, and keep the rest of the prompt intact.',
+    title: 'Refine one field at a time',
+    body: 'Pick a single field, ask the model for a reviewable suggestion, and keep the rest of the prompt intact. Apply, discard, or hand-edit the suggestion before it lands.',
   },
   {
     n: '03',
-    title: 'Generate and compare',
-    body: 'Send the finished direction to the image or video studio, review the result, then return with a sharper next pass.',
+    title: 'Generate from the same document',
+    body: 'Send the live structure to the image or video studio. Pick a take, capture a continuity frame, or return to the source for a sharper next pass.',
   },
 ] as const;
