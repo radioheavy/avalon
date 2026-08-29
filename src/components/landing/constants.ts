@@ -22,38 +22,46 @@ export const LINKS = {
   wiro: 'https://wiro.ai/',
 } as const;
 
-export const SCREENSHOTS = [
-  {
-    key: 'editor',
-    label: 'Editor',
-    src: '/a/new-3-editor.png',
-    alt: 'Avalon visual JSON editor',
-    description: 'Edit complex prompts as a navigable tree.',
-  },
-  {
-    key: 'expander',
-    label: 'Expander',
-    src: '/a/new-4-expander.png',
-    alt: 'AI prompt expander',
-    description: 'Turn a one-liner into a structured prompt.',
-  },
-  {
-    key: 'reverse',
-    label: 'Reverse',
-    src: '/a/new-6-reverse-result.png',
-    alt: 'Reverse engineer an image back into a prompt',
-    description: 'Drop a reference image, get the prompt.',
-  },
+export const PRODUCT_VIEWS = [
   {
     key: 'dashboard',
     label: 'Dashboard',
-    src: '/a/new-2-dashboard.png',
-    alt: 'Avalon dashboard with community prompts',
-    description: 'Browse, remix, and ship from a single workspace.',
+    alt: 'Avalon dashboard with recent prompts and workspace actions',
+    description: 'Start a prompt, browse the library, or return to recent work.',
+  },
+  {
+    key: 'editor',
+    label: 'Build',
+    alt: 'Avalon Build workspace with prompt map and editable fields',
+    description: 'Edit complex prompts as a navigable tree.',
+  },
+  {
+    key: 'refine',
+    label: 'Refine',
+    alt: 'Avalon Refine workspace with the Enhance panel',
+    description: 'Improve one field with a reviewable AI suggestion.',
+  },
+  {
+    key: 'generate',
+    label: 'Generate',
+    alt: 'Avalon Generate step with image and video studio choices',
+    description: 'Carry the same structured document into the right studio.',
+  },
+  {
+    key: 'image',
+    label: 'Image Studio',
+    alt: 'Avalon Image Studio with source prompt and generation controls',
+    description: 'Prepare the live prompt, tune the recipe, and generate stills.',
+  },
+  {
+    key: 'video',
+    label: 'Video Studio',
+    alt: 'Avalon Video Studio with player and scene timeline',
+    description: 'Direct scenes and keep visual continuity across a film.',
   },
 ] as const;
 
-export type ScreenshotKey = (typeof SCREENSHOTS)[number]['key'];
+export type ProductViewKey = (typeof PRODUCT_VIEWS)[number]['key'];
 
 export const FEATURES = [
   {

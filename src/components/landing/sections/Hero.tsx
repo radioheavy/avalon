@@ -1,7 +1,7 @@
-import Image from 'next/image';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/brand/Logo';
+import { ProductPreview } from '@/components/landing/ProductPreview';
 import { LINKS } from '../constants';
 
 type HeroProps = {
@@ -82,7 +82,7 @@ export function Hero({ onStart }: HeroProps) {
         <div className="relative flex min-w-0 items-center px-5 pb-10 pt-2 sm:px-8 sm:pb-14 lg:px-10 lg:py-20">
           <div className="w-full border border-zinc-300 bg-white p-1.5 shadow-[8px_8px_0_0_rgb(39_39_42_/_0.08)] sm:p-2">
             <div className="flex h-9 items-center justify-between border-b border-zinc-200 px-3 text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-500"><span>Structured editor</span><span className="text-violet-700">Live document</span></div>
-            <Image src="/a/new-3-editor.png" alt="Avalon structured prompt editor with prompt map and editable duration field" width={3024} height={1828} priority sizes="(min-width: 1024px) 52vw, (min-width: 640px) 80vw, 92vw" className="block h-auto w-full object-cover object-top" />
+            <ProductPreview view="editor" compact />
           </div>
           <p className="absolute bottom-3 right-5 hidden bg-[#faf9f6] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-zinc-500 sm:block lg:bottom-12 lg:right-10">Local-first / no account</p>
         </div>

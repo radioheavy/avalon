@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import { SCREENSHOTS, type ScreenshotKey } from '../constants';
+import { PRODUCT_VIEWS, type ProductViewKey } from '../constants';
+import { ProductPreview } from '@/components/landing/ProductPreview';
 
 export function Showcase() {
-  const [active, setActive] = useState<ScreenshotKey>('editor');
-  const current = SCREENSHOTS.find((s) => s.key === active) ?? SCREENSHOTS[0];
+  const [active, setActive] = useState<ProductViewKey>('dashboard');
+  const current = PRODUCT_VIEWS.find((view) => view.key === active) ?? PRODUCT_VIEWS[0];
 
   return (
     <section className="relative mx-auto w-full max-w-6xl px-6 sm:px-8" id="showcase">
@@ -28,7 +28,7 @@ export function Showcase() {
 
       <div className="mt-8 border-b border-zinc-200">
         <div className="flex min-w-max gap-5 overflow-x-auto" role="tablist" aria-label="Avalon views">
-          {SCREENSHOTS.map((s) => {
+          {PRODUCT_VIEWS.map((s) => {
             const isActive = s.key === active;
             return (
               <button
@@ -67,20 +67,7 @@ export function Showcase() {
           aria-labelledby={`showcase-tab-${active}`}
           className="relative aspect-[16/9] w-full bg-zinc-100"
         >
-          {SCREENSHOTS.map((s) => (
-            <Image
-              key={s.key}
-              src={s.src}
-              alt={s.alt}
-              fill
-              priority={s.key === 'editor'}
-              sizes="(min-width: 1280px) 1152px, (min-width: 640px) calc(100vw - 64px), calc(100vw - 48px)"
-              className={cn(
-                'object-cover object-top transition-opacity duration-300 ease-out',
-                s.key === active ? 'opacity-100' : 'pointer-events-none opacity-0'
-              )}
-            />
-          ))}
+          <ProductPreview view={active} />
         </div>
       </figure>
     </section>
