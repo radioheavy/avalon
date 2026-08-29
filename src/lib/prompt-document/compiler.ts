@@ -8,6 +8,23 @@ function constraints(projection: StructuredProjection): string {
   return projection.constraints.length ? `Constraints:\n${projection.constraints.map((item) => `- ${item}`).join('\n')}` : '';
 }
 
+function productionBible(projection: StructuredProjection): string {
+  const labels: Array<[string, string]> = [
+    ['Realism', 'realism_principle'],
+    ['Visual world', 'visual_world'],
+    ['Lighting', 'lighting'],
+    ['Camera', 'camera_language'],
+    ['Lens philosophy', 'lens_philosophy'],
+    ['Production texture', 'production_texture'],
+    ['Performance', 'performance_direction'],
+    ['Editing', 'editing'],
+  ];
+  return labels
+    .map(([label, key]) => projection.sections[key]?.trim() ? `${label}: ${projection.sections[key].trim()}` : '')
+    .filter(Boolean)
+    .join('\n\n');
+}
+
 function segmentPrompt(segment: TimelineSegment): string {
   return [
     `${segment.start.toFixed(1)}–${segment.end.toFixed(1)}s — ${segment.title}`,
@@ -43,6 +60,8 @@ export function compileVideoPrompt(projection: StructuredProjection): CompiledPr
     projection.style.length ? `Global visual language: ${projection.style.join(', ')}` : undefined,
     projection.mood.length ? `Emotional tone: ${projection.mood.join(', ')}` : undefined,
     projection.palette.length ? `Palette: ${projection.palette.join(', ')}` : undefined,
+    projection.camera.length ? `Global camera language: ${projection.camera.join(' ')}` : undefined,
+    productionBible(projection) ? `Production direction:\n${productionBible(projection)}` : undefined,
   ]);
   const timeline = projection.timeline.length
     ? projection.timeline.map(segmentPrompt).join('\n\n')
@@ -81,6 +100,7 @@ export function compileVideoScenePrompt(
     projection.mood.length ? `Emotional tone: ${projection.mood.join(', ')}` : undefined,
     projection.palette.length ? `Palette: ${projection.palette.join(', ')}` : undefined,
     projection.camera.length ? `Global camera language: ${projection.camera.join(' ')}` : undefined,
+    productionBible(projection) ? `Production direction:\n${productionBible(projection)}` : undefined,
     projection.audio.music ? `Music system: ${projection.audio.music}` : undefined,
     projection.audio.soundDesign ? `Sound design system: ${projection.audio.soundDesign}` : undefined,
     projection.audio.narration ? `Narration system: ${projection.audio.narration}` : undefined,

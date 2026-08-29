@@ -774,7 +774,10 @@ export function EditorWorkspace({ prompt, onBack }: { prompt: Prompt; onBack: ()
   const { selectedPath, setSelectedPath } = usePromptStore();
   const sections = useMemo(() => getSectionEntries(prompt.content), [prompt.content]);
   const [activePath, setActivePath] = useState<string[]>(sections[0]?.path || []);
-  const [view, setView] = useState<WorkspaceView>('editor');
+  const [view, setView] = useState<WorkspaceView>(() => {
+    const mediaType = (prompt as Prompt & { mediaType?: string }).mediaType;
+    return mediaType === 'video' ? 'timeline' : 'editor';
+  });
   const [step, setStep] = useState<WorkspaceStep>('build');
   const [compactPane, setCompactPane] = useState<CompactPane>('document');
   const [copied, setCopied] = useState(false);

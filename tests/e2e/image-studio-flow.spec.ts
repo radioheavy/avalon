@@ -136,7 +136,7 @@ test('mobile can enter studio and change the live source section', async ({ page
   await expect(page.getByRole('tab', { name: 'Enhance' })).toHaveCount(0);
 
   await page.getByRole('tab', { name: 'Sections' }).click();
-  await page.getByRole('button', { name: /Lighting/ }).click();
+  await page.getByRole('button', { name: /^Lighting / }).click();
   await page.getByRole('tab', { name: 'Current section' }).click();
   await expect(page.getByTestId('image-source-preview')).toContainText('Soft diffused window light');
   await expect(page.getByTestId('image-source-preview')).not.toContainText('Black wool jacket');

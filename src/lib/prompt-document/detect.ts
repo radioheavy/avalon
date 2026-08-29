@@ -36,7 +36,8 @@ function titleFromText(raw: string): string | undefined {
   const titleMatch = raw.match(/^TITLE\s*:\s*\n?\s*(.+)$/im);
   if (titleMatch?.[1] && !/^[-—]+$/.test(titleMatch[1].trim())) return titleMatch[1].trim();
   const firstUseful = raw.split(/\r?\n/).map((line) => line.trim()).find((line) => line && !/^[-—_*]{3,}$/.test(line));
-  return firstUseful && firstUseful.length < 120 ? firstUseful.replace(/:$/, '') : undefined;
+  const cleaned = firstUseful?.replace(/^#{1,6}\s*/, '').replace(/\s*#*\s*$/, '').replace(/^\*\*(.+)\*\*$/, '$1').replace(/:$/, '').trim();
+  return cleaned && cleaned.length < 120 ? cleaned : undefined;
 }
 
 export function detectPromptInput(rawInput: string): DetectedPromptInput {

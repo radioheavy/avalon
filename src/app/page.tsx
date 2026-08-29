@@ -16,12 +16,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { detectPromptInput, parsePromptBrief } from '@/lib/prompt-document';
 import {
   Check,
+  Film,
   ImageIcon,
   Loader2,
+  ScanText,
 } from 'lucide-react';
 
 type View = 'dashboard' | 'editor';
 type AppMode = 'loading' | 'web' | 'app';
+type CreateMediaMode = 'auto' | 'image' | 'video';
 
 export default function App() {
   const [appMode, setAppMode] = useState<AppMode>('loading');
@@ -90,12 +93,16 @@ function EditorApp() {
   const [newName, setNewName] = useState('');
   const [importJson, setImportJson] = useState('');
   const [createError, setCreateError] = useState<string | null>(null);
+  const [createMediaMode, setCreateMediaMode] = useState<CreateMediaMode>('auto');
   const [showSettings, setShowSettings] = useState(false);
   const detectedInput = useMemo(() => detectPromptInput(importJson), [importJson]);
   const inputProjection = useMemo(
     () => importJson.trim() ? parsePromptBrief(importJson) : null,
     [importJson]
   );
+  const effectiveMediaType = createMediaMode === 'auto'
+    ? inputProjection?.mediaType
+    : createMediaMode;
 
   // Onboarding göster
   if (!onboardingComplete) {
@@ -111,10 +118,15 @@ function EditorApp() {
     const name = newName.trim() || inferredName;
     if (!name || (!newName.trim() && !importJson.trim())) return;
 
-    const id = createDocument(name, importJson.trim() ? importJson : {});
+    const id = createDocument(
+      name,
+      importJson.trim() ? importJson : {},
+      createMediaMode === 'auto' ? {} : { mediaType: createMediaMode }
+    );
     setNewName('');
     setImportJson('');
     setCreateError(null);
+    setCreateMediaMode('auto');
     setShowCreate(false);
     setCurrentPrompt(id);
     setView('editor');
@@ -197,7 +209,7 @@ function EditorApp() {
 
   // EDITOR VIEW
   if (view === 'editor' && prompt) {
-    return <EditorWorkspace prompt={prompt} onBack={handleBack} />;
+    return <EditorWorkspace key={prompt.id} prompt={prompt} onBack={handleBack} />;
   }
 
   // DASHBOARD VIEW
@@ -224,14 +236,45 @@ function EditorApp() {
           onClose={() => {
             setShowCreate(false);
             setCreateError(null);
+            setCreateMediaMode('auto');
           }}
           eyebrow="New workspace"
           title="Create a prompt document"
           description="Paste a raw creative brief or structured JSON. Avalon preserves the source and builds the right workspace around it."
           symbol="compose"
-          maxWidthClassName="max-w-lg"
+          maxWidthClassName="max-w-2xl"
         >
           <div className="space-y-5">
+            <div>
+              <p className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">Output workspace</p>
+              <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Output workspace">
+                {([
+                  ['auto', 'Auto-detect', ScanText],
+                  ['image', 'Image', ImageIcon],
+                  ['video', 'Video', Film],
+                ] as const).map(([value, label, Icon]) => {
+                  const active = createMediaMode === value;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => setCreateMediaMode(value)}
+                      className={`flex min-h-12 items-center justify-center gap-2 rounded-xl border px-3 text-xs font-semibold transition-colors ${active ? 'border-zinc-950 bg-zinc-950 text-white' : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400'}`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-2 text-xs leading-5 text-zinc-500">
+                {createMediaMode === 'auto'
+                  ? 'Avalon will inspect the brief for frames, timecodes, scenes, motion, and delivery language.'
+                  : `Force this document into the ${createMediaMode} workflow even if the source is ambiguous.`}
+              </p>
+            </div>
             <div>
               <label htmlFor="document-name" className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
                 Document name <span className="font-normal normal-case tracking-normal text-zinc-400">(optional with a brief)</span>
@@ -262,18 +305,24 @@ function EditorApp() {
                 className="rounded-2xl border-zinc-200 bg-zinc-50 p-4 text-sm leading-6 shadow-none focus-visible:border-zinc-400 focus-visible:ring-zinc-200"
               />
               {importJson.trim() && inputProjection && (
-                <div className="mt-3 flex flex-wrap gap-2" aria-label="Detected document details">
-                  <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium text-zinc-600">
-                    {detectedInput.type === 'json' ? 'Structured JSON' : 'Plain-text brief'}
-                  </span>
-                  <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[11px] font-medium capitalize text-violet-700">
-                    {inputProjection.mediaType}
-                  </span>
-                  {inputProjection.timeline.length > 0 && (
-                    <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium text-zinc-600">
-                      {inputProjection.timeline.length} timeline segments
-                    </span>
-                  )}
+                <div className="mt-3 rounded-xl border border-zinc-200 bg-white p-4" aria-label="Detected document details">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${effectiveMediaType === 'video' ? 'bg-cyan-50 text-cyan-700' : 'bg-violet-50 text-violet-700'}`}>
+                        {effectiveMediaType === 'video' ? <Film className="h-4 w-4" /> : <ImageIcon className="h-4 w-4" />}
+                      </span>
+                      <div>
+                        <p className="text-xs font-semibold capitalize text-zinc-900">{effectiveMediaType} workspace</p>
+                        <p className="text-[10px] text-zinc-400">{createMediaMode === 'auto' ? 'Detected from source' : 'Selected manually'}</p>
+                      </div>
+                    </div>
+                    <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-400">{detectedInput.type === 'json' ? 'Structured JSON' : 'Plain-text brief'}</span>
+                  </div>
+                  <div className="mt-4 grid grid-cols-3 divide-x divide-zinc-200 border-t border-zinc-100 pt-3 text-center">
+                    <div><p className="text-sm font-semibold text-zinc-900">{inputProjection.timeline.length || '—'}</p><p className="text-[10px] text-zinc-400">Scenes</p>{inputProjection.timeline.length > 0 && <span className="sr-only">{inputProjection.timeline.length} timeline segments</span>}</div>
+                    <div><p className="text-sm font-semibold text-zinc-900">{inputProjection.technical.duration_seconds ? `${inputProjection.technical.duration_seconds}s` : '—'}</p><p className="text-[10px] text-zinc-400">Duration</p></div>
+                    <div><p className="text-sm font-semibold text-zinc-900">{Object.keys(inputProjection.sections).length}</p><p className="text-[10px] text-zinc-400">Sections</p></div>
+                  </div>
                 </div>
               )}
               {createError && (
@@ -288,6 +337,7 @@ function EditorApp() {
                 onClick={() => {
                   setShowCreate(false);
                   setCreateError(null);
+                  setCreateMediaMode('auto');
                 }}
                 className="h-11 rounded-full px-5 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
               >

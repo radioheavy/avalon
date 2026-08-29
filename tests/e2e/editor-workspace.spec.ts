@@ -88,7 +88,7 @@ test('desktop editor supports the core prompt workflow', async ({ page }) => {
   await expect(page.getByTestId('enhance-panel')).toBeHidden();
   await expect(page.getByRole('heading', { name: 'Cinematic Portrait' })).toBeVisible();
 
-  await page.getByRole('button', { name: /Lighting/ }).click();
+  await page.getByRole('button', { name: /^Lighting / }).click();
   await expect(page.getByRole('heading', { name: 'Lighting' })).toBeVisible();
 
   const direction = page.getByTestId('document-canvas').locator('input').first();
@@ -137,7 +137,7 @@ test('compact editor exposes each pane without duplicate mounts', async ({ page 
 
   await page.getByRole('tab', { name: 'Sections' }).click();
   await expect(page.getByTestId('prompt-map')).toBeVisible();
-  await page.getByRole('button', { name: /Lighting/ }).click();
+  await page.getByRole('button', { name: /^Lighting / }).click();
   await expect(page.getByTestId('document-canvas')).toBeVisible();
 
   await page.getByRole('tab', { name: /Refine/ }).click();

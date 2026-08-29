@@ -2,10 +2,10 @@ import type { JsonObject, JsonValue } from '@/types/prompt';
 import type { AudioPlan, StructuredProjection, TimelineSegment } from '@/types/prompt-document';
 import { detectPromptInput, inferMediaType } from './detect';
 
-const TIME_RANGE = /^(\d+(?:\.\d+)?)\s*(?:–|—|-|to)\s*(\d+(?:\.\d+)?)\s*(?:SEC|SECS|SECOND|SECONDS)?\b\s*(?:[—–-]\s*)?(.*)$/i;
+const TIME_RANGE = /^\s*(?:#{1,6}\s*)?(\d+(?:\.\d+)?)\s*(?:–|—|-|to)\s*(\d+(?:\.\d+)?)\s*(?:SEC|SECS|SECOND|SECONDS)?\b\s*(?:[—–-]\s*)?(.*?)\s*#*\s*$/i;
 const DIVIDER = /^\s*[-_=*]{3,}\s*$/;
 const HEADING = /^\s*([A-Z][A-Z0-9 /&'’().:_-]{2,})\s*:?\s*$/;
-const CONSTRAINT = /^(?:[-•]\s*)?(?:no\b|do not\b|don't\b|must not\b|never\b|avoid\b|only\b|nothing\s+should\b|the .+ must not\b)/i;
+const CONSTRAINT = /^(?:[-•]\s*)?(?:no\b|do not\b|don't\b|must not\b|never\b|avoid\b|only\b|it is not\b|this is not\b|nothing\s+should\b|the .+ must not\b)/i;
 
 function clean(value: string): string {
   return value.trim().replace(/[ \t]+/g, ' ').replace(/^[-•]\s*/, '').trim();
@@ -13,6 +13,19 @@ function clean(value: string): string {
 
 function linesOf(raw: string): string[] {
   return raw.replace(/\r\n/g, '\n').split('\n');
+}
+
+function headingText(line: string): string | null {
+  const markdown = line.match(/^\s*#{1,6}\s+(.+?)\s*#*\s*$/);
+  const candidate = clean(markdown?.[1] ?? line).replace(/^\*\*(.+)\*\*$/, '$1').replace(/:$/, '').trim();
+  if (!candidate || TIME_RANGE.test(line)) return null;
+  return markdown || HEADING.test(candidate) ? candidate : null;
+}
+
+function isTimelineBoundaryHeading(line: string): boolean {
+  if (/^\s*#{1,6}\s+/.test(line)) return !TIME_RANGE.test(line);
+  const heading = headingText(line);
+  return Boolean(heading && /^(?:MUSIC|MUSIC ARC|SOUND DESIGN|CAMERA LANGUAGE|CAMERA COMPOSITION|LENS PHILOSOPHY|LIGHTING|PRODUCTION TEXTURE|PERFORMANCE DIRECTION|EDITING|PHILOSOPHICAL CORE|EMOTIONAL ARC|FINAL DIRECTING (?:RULE|PRINCIPLE))$/i.test(heading));
 }
 
 function sectionKey(heading: string): string {
@@ -72,6 +85,8 @@ function extractTitle(lines: string[], sections: Record<string, string>): string
     const value = lines.slice(titleLine + 1).find((line) => clean(line) && !DIVIDER.test(line));
     if (value) return clean(value);
   }
+  const markdownTitle = lines.map((line) => line.match(/^\s*#\s+(.+?)\s*#*\s*$/)?.[1]?.trim()).find(Boolean);
+  if (markdownTitle && !TIME_RANGE.test(markdownTitle)) return markdownTitle;
   return sections.title || sections.name || 'Untitled brief';
 }
 
@@ -79,8 +94,8 @@ function segmentFromBlock(start: number, end: number, heading: string, block: st
   const body = block.map(clean).filter(Boolean);
   const all = body.join(' ');
   const constraints = body.filter((line) => CONSTRAINT.test(line));
-  const camera = body.filter((line) => /camera|push[- ]?in|pan|parallax|composition|framing|angle/i.test(line)).join(' ');
-  const audio = body.filter((line) => /music|sound|audio|wind|percussion|duduk|ney|narration|vocal/i.test(line)).join(' ');
+  const camera = body.filter((line) => /camera|track|handheld|locked|close[- ]?up|wide composition|push[- ]?in|pan|parallax|framing|angle|macro|lens|focus/i.test(line)).join(' ');
+  const audio = body.filter((line) => /music|score|sound|silence|rain|footsteps?|boots|wind|fabric|hinge|coin|graphite|paper|metal|click|clunk|whisper|voice|breath|candle|reverb|resonance/i.test(line)).join(' ');
   return {
     id: `segment-${start.toString().replace('.', '_')}-${end.toString().replace('.', '_')}`,
     start,
@@ -88,7 +103,7 @@ function segmentFromBlock(start: number, end: number, heading: string, block: st
     title: clean(heading) || `${start}–${end} seconds`,
     summary: all,
     visual: body.filter((line) => !/camera|music|sound|audio/i.test(line)).join(' '),
-    action: body.filter((line) => /emerge|form|spread|move|rise|climb|dissolve|appear|expand|unfold|reach|pull/i.test(line)).join(' '),
+    action: body.filter((line) => /approach|arrive|enter|walk|stop|look|sit|stand|place|add|slide|write|read|fold|seal|push|close|open|leave|turn|reach|drop|fall|disappear|emerge|form|spread|move|rise|climb|dissolve|appear|expand|unfold|extinguish/i.test(line)).join(' '),
     ...(camera ? { camera } : {}),
     ...(audio ? { audio } : {}),
     constraints,
@@ -104,11 +119,19 @@ export function parsePromptBrief(raw: string): StructuredProjection {
   const sections: Record<string, string> = {};
   const sectionBlocks = new Map<string, string[]>();
   let activeSection = '';
+  let inTimeline = false;
   lines.forEach((line) => {
     if (DIVIDER.test(line)) return;
-    const headingMatch = line.match(HEADING);
-    if (headingMatch && !TIME_RANGE.test(line)) {
-      activeSection = sectionKey(headingMatch[1]);
+    if (TIME_RANGE.test(line)) {
+      activeSection = '';
+      inTimeline = true;
+      return;
+    }
+    if (inTimeline && !isTimelineBoundaryHeading(line)) return;
+    if (inTimeline && isTimelineBoundaryHeading(line)) inTimeline = false;
+    const heading = headingText(line);
+    if (heading) {
+      activeSection = sectionKey(heading);
       if (!sectionBlocks.has(activeSection)) sectionBlocks.set(activeSection, []);
       return;
     }
@@ -124,6 +147,9 @@ export function parsePromptBrief(raw: string): StructuredProjection {
     if (match) {
       flush();
       current = { start: Number(match[1]), end: Number(match[2]), heading: clean(match[3]) || `${match[1]}–${match[2]} seconds`, body: [] };
+    } else if (current && isTimelineBoundaryHeading(line)) {
+      flush();
+      current = null;
     } else if (current) {
       current.body.push(line);
     }
@@ -132,14 +158,15 @@ export function parsePromptBrief(raw: string): StructuredProjection {
 
   const fullText = lines.map(clean).filter(Boolean).join('\n');
   const title = extractTitle(lines, sections);
-  const style = (sections.primary_visual_style || sections.visual_style || sections.style || '').split(/\n|,(?=\s)/).map(clean).filter(Boolean);
-  const mood = (sections.overall_feeling_should_be || sections.mood || sections.tone || '').split(/\n|,(?=\s)/).map(clean).filter(Boolean);
+  const style = (sections.primary_visual_style || sections.visual_world || sections.visual_style || sections.style || '').split(/\n|,(?=\s)/).map(clean).filter(Boolean);
+  const mood = (sections.emotional_arc || sections.overall_feeling_should_be || sections.mood || sections.tone || '').split(/\n|,(?=\s)/).map(clean).filter(Boolean);
   const constraints = lines.map(clean).filter((line) => CONSTRAINT.test(line));
   const music = sections.music || sections.music_arc || '';
   const soundDesign = sections.sound_design || sections.sound || '';
   const audio: AudioPlan = {
     ...(music ? { music } : {}),
     ...(soundDesign ? { soundDesign } : {}),
+    ...(sections.the_single_spoken_line ? { narration: sections.the_single_spoken_line } : {}),
     restrictions: constraints.filter((item) => /narration|dialogue|voice|vocal|lyrics|spoken language/i.test(item)),
   };
   const duration = segments.length ? Math.max(...segments.map((segment) => segment.end)) : undefined;
@@ -151,19 +178,19 @@ export function parsePromptBrief(raw: string): StructuredProjection {
     schemaVersion: 2,
     mediaType: inferMediaType(raw),
     title,
-    summary: sections.core_idea || sections.final_directing_principle || fullText.slice(0, 500),
+    summary: sections.the_central_myth || sections.philosophical_core || sections.core_idea || sections.final_directing_rule || sections.final_directing_principle || fullText.slice(0, 500),
     style,
     mood,
-    palette: (sections.color_system || sections.color_palette || '').split(/\n|,(?=\s)/).map(clean).filter(Boolean),
+    palette: (sections.color_language || sections.color_system || sections.color_palette || '').split(/\n|,(?=\s)/).map(clean).filter(Boolean),
     constraints: Array.from(new Set(constraints)),
     sections,
     timeline: segments,
     audio,
-    camera: (sections.camera_composition || sections.camera || '').split(/\n/).map(clean).filter(Boolean),
+    camera: (sections.camera_language || sections.camera_composition || sections.camera || '').split(/\n/).map(clean).filter(Boolean),
     technical,
     content: {
       title,
-      summary: sections.core_idea || sections.final_directing_principle || fullText.slice(0, 500),
+      summary: sections.the_central_myth || sections.philosophical_core || sections.core_idea || sections.final_directing_rule || sections.final_directing_principle || fullText.slice(0, 500),
       media_type: inferMediaType(raw),
       duration_seconds: duration ?? null,
       style: style.join(', '),
