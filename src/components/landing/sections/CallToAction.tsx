@@ -6,6 +6,12 @@ type CallToActionProps = {
   onStart: () => void;
 };
 
+const DOWNLOADS = [
+  { label: 'macOS', icon: Apple, href: LINKS.macDownload },
+  { label: 'Windows', icon: Monitor, href: LINKS.windowsDownload },
+  { label: 'Source', icon: Github, href: LINKS.github },
+] as const;
+
 export function CallToAction({ onStart }: CallToActionProps) {
   return (
     <section className="relative mx-auto w-full max-w-6xl px-5 sm:px-8" id="get-started">
@@ -15,8 +21,8 @@ export function CallToAction({ onStart }: CallToActionProps) {
           <div className="absolute -right-16 bottom-[-6rem] h-72 w-72 rounded-full bg-indigo-500/20 blur-3xl" />
         </div>
 
-        <div className="relative z-10 mx-auto flex max-w-4xl flex-col justify-between gap-8 lg:flex-row lg:items-end">
-          <div className="max-w-2xl">
+        <div className="relative z-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+          <div className="max-w-xl">
             <p className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-violet-300">
               <span className="h-1.5 w-1.5 rounded-full bg-violet-300" />
               Ready when you are
@@ -24,49 +30,34 @@ export function CallToAction({ onStart }: CallToActionProps) {
             <h2 className="mt-3 text-balance text-3xl font-semibold tracking-[-0.035em] text-white sm:text-4xl">
               Give the next prompt a proper workspace.
             </h2>
-            <p className="mt-4 max-w-xl text-base leading-7 text-zinc-300">
+            <p className="mt-4 text-base leading-7 text-zinc-300">
               Start in the browser, keep your keys local, and work with the models already in your
               toolkit.
             </p>
           </div>
 
-          <div className="flex flex-col gap-3 lg:items-end">
+          <div className="flex flex-col gap-3 sm:max-w-sm">
             <Button
               onClick={onStart}
               size="lg"
-              className="h-11 gap-1.5 rounded-md bg-white px-5 text-sm font-semibold text-zinc-950 shadow-none transition-colors hover:bg-zinc-200"
+              className="h-11 w-full gap-2 rounded-md bg-white px-4 text-sm font-semibold text-zinc-950 shadow-none transition-colors hover:bg-zinc-200"
             >
               Open the editor
               <ArrowRight className="h-4 w-4" />
             </Button>
-            <div className="flex flex-wrap gap-2">
-              <a
-                href={LINKS.macDownload}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-700 px-3 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-white/5"
-              >
-                <Apple className="h-4 w-4" />
-                macOS
-              </a>
-              <a
-                href={LINKS.windowsDownload}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-700 px-3 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-white/5"
-              >
-                <Monitor className="h-4 w-4" />
-                Windows
-              </a>
-              <a
-                href={LINKS.github}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-700 px-3 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-white/5"
-              >
-                <Github className="h-4 w-4" />
-                Source
-              </a>
+            <div className="grid grid-cols-3 gap-2">
+              {DOWNLOADS.map(({ label, icon: Icon, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border border-zinc-700 px-2 text-[12px] font-medium text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-white/5"
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {label}
+                </a>
+              ))}
             </div>
           </div>
         </div>
