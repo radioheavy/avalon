@@ -137,6 +137,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const [wiroAuthMode, setWiroAuthMode] = useState<WiroAuthMode>('signature');
   const [wiroApiSecret, setWiroApiSecret] = useState('');
   const [imgTestState, setImgTestState] = useState<TestState>('idle');
+  const [imgTestError, setImgTestError] = useState<string | null>(null);
 
   // Fade key for soft step transitions
   const [transitionKey, setTransitionKey] = useState(0);
@@ -203,6 +204,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       (selectedImageGen === 'wiro' && wiroAuthMode === 'signature' && !wiroApiSecret.trim())
     ) return;
     setImgTestState('testing');
+    setImgTestError(null);
     try {
       let ok = false;
       if (selectedImageGen === 'fal') {
@@ -216,10 +218,14 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         });
         ok = res.status !== 401 && res.status !== 403;
       } else {
-        ok = await testWiroCredentials({
+        const result = await testWiroCredentials({
           apiKey: imageGenKey,
           apiSecret: wiroAuthMode === 'signature' ? wiroApiSecret : undefined,
         });
+        ok = result.success;
+        if (!result.success) {
+          setImgTestError(result.error || 'Wiro connection failed');
+        }
       }
       if (ok) {
         setImgTestState('success');
@@ -228,6 +234,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         setImgTestState('error');
       }
     } catch {
+      setImgTestError('Could not reach Wiro. Please try again.');
       setImgTestState('error');
     }
   };
@@ -289,24 +296,29 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                 setWiroApiSecret('');
                 setWiroAuthMode('signature');
                 setImgTestState('idle');
+                setImgTestError(null);
               }}
               apiKey={imageGenKey}
               onApiKeyChange={(v) => {
                 setImageGenKey(v);
                 if (imgTestState !== 'idle') setImgTestState('idle');
+                if (imgTestError) setImgTestError(null);
               }}
               wiroAuthMode={wiroAuthMode}
               onWiroAuthModeChange={(mode) => {
                 setWiroAuthMode(mode);
                 setWiroApiSecret('');
                 setImgTestState('idle');
+                setImgTestError(null);
               }}
               wiroApiSecret={wiroApiSecret}
               onWiroApiSecretChange={(value) => {
                 setWiroApiSecret(value);
                 if (imgTestState !== 'idle') setImgTestState('idle');
+                if (imgTestError) setImgTestError(null);
               }}
               testState={imgTestState}
+              testError={imgTestError}
               onBack={() => goTo('api-setup')}
               onTest={testImageGenKey}
               onSkip={() => {
@@ -628,6 +640,7 @@ function ImageGenStep(props: {
   wiroApiSecret: string;
   onWiroApiSecretChange: (value: string) => void;
   testState: TestState;
+  testError: string | null;
   onBack: () => void;
   onTest: () => void;
   onSkip: () => void;
@@ -642,6 +655,7 @@ function ImageGenStep(props: {
     wiroApiSecret,
     onWiroApiSecretChange,
     testState,
+    testError,
     onBack,
     onTest,
     onSkip,
@@ -825,6 +839,9 @@ function ImageGenStep(props: {
                 />
               </div>
             </div>
+          )}
+          {testState === 'error' && testError && (
+            <p className="mt-3 text-xs text-red-600">{testError}</p>
           )}
         </div>
       )}

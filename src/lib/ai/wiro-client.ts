@@ -115,19 +115,24 @@ export async function createWiroAuthHeaders(
   return headers;
 }
 
-// Validates credentials without starting a billable generation. An unknown task
-// still passes authentication; Wiro documents 401/403 as credential failures.
-export async function testWiroCredentials(credentials: WiroCredentials): Promise<boolean> {
-  const response = await fetch('https://api.wiro.ai/v1/Task/Detail', {
+// Validate through Avalon's server so browser CORS policy cannot block Wiro.
+// The credentials are forwarded for this request only and are never persisted.
+export async function testWiroCredentials(
+  credentials: WiroCredentials
+): Promise<{ success: boolean; error?: string }> {
+  const response = await fetch('/api/wiro/test', {
     method: 'POST',
     headers: {
-      ...(await createWiroAuthHeaders(credentials)),
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ taskid: 'avalon-credential-check' }),
+    body: JSON.stringify(credentials),
   });
 
-  return response.status !== 401 && response.status !== 403;
+  const data = await response.json().catch(() => null);
+  return {
+    success: response.ok && data?.success === true,
+    error: typeof data?.error === 'string' ? data.error : undefined,
+  };
 }
 
 // Generate image using either Wiro.ai authentication mode.
