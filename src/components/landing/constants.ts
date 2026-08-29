@@ -108,16 +108,16 @@ export const STEPS = [
   {
     n: '01',
     title: 'Build the structure',
-    body: 'Edit subject, camera, light, style, and constraints as a navigable document. The source brief and its projection stay attached to the same record, ready to revise.',
+    body: 'Work in a three-pane workspace: a navigable prompt map, a typed field editor for the active section, and alternate views (Preview, Source brief, Structure, Timeline, Raw JSON). Subject, camera, light, style, and constraints each get their own editable field, and the Source brief stays distinct from the working structure so you can re-derive the projection on demand.',
   },
   {
     n: '02',
     title: 'Refine one field at a time',
-    body: 'Pick a single field, ask the model for a reviewable suggestion, and keep the rest of the prompt intact. Apply, discard, or hand-edit the suggestion before it lands.',
+    body: 'Pick a field, send its current value plus the full prompt context to the model, and review the change as a diff in the Enhance panel. Choose a quick intent (be more precise, add useful visual detail, simplify without losing intent) or write your own instruction. Apply touches only that field; Discard keeps the rest of the prompt intact.',
   },
   {
     n: '03',
-    title: 'Generate from the same document',
-    body: 'Send the live structure to the image or video studio. Pick a take, capture a continuity frame, or return to the source for a sharper next pass.',
+    title: 'Generate the take',
+    body: 'Send the live structure to the Image Studio for stills, or to the Video Studio for a film project with scenes, takes, and continuity frames. Every take is signed by the producing revision, so a later edit flags older outputs as stale instead of letting them pass as current.',
   },
 ] as const;
