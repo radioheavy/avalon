@@ -1,6 +1,5 @@
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Logo } from '@/components/brand/Logo';
 import { ProductPreview } from '@/components/landing/ProductPreview';
 import { LINKS } from '../constants';
 
@@ -18,7 +17,7 @@ export function Hero({ onStart }: HeroProps) {
       </div>
 
       <header className="relative mx-auto flex w-full max-w-7xl items-center justify-between border-b border-zinc-200 px-5 py-4 sm:px-8 lg:px-10">
-        <Logo size={30} withWordmark />
+        <span className="text-base font-semibold tracking-[-0.03em] text-zinc-950">Avalon</span>
         <nav aria-label="Primary navigation" className="hidden items-center gap-8 text-sm text-zinc-600 md:flex">
           <a href="#features" className="underline-offset-4 transition-colors hover:text-zinc-950 hover:underline">
             Capabilities
