@@ -17,9 +17,9 @@ type LandingPageProps = {
  */
 export function LandingPage({ onStart }: LandingPageProps) {
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-[#fcfbf9] text-zinc-900 antialiased">
+    <main id="top" className="relative min-h-screen overflow-x-hidden bg-[#fcfbf9] text-zinc-900 antialiased">
       <Hero onStart={onStart} />
-      <div className="space-y-24 py-20 sm:space-y-32 sm:py-24">
+      <div className="space-y-24 py-20 sm:space-y-32 sm:py-28">
         <Showcase />
         <Features />
         <Providers />

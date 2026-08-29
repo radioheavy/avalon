@@ -1,4 +1,4 @@
-import { ArrowRight, Apple, Monitor } from 'lucide-react';
+import { ArrowRight, Apple, Monitor, Github } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LINKS } from '../constants';
 
@@ -8,11 +8,17 @@ type CallToActionProps = {
 
 export function CallToAction({ onStart }: CallToActionProps) {
   return (
-    <section className="relative mx-auto w-full max-w-6xl px-6 sm:px-8" id="get-started">
-      <div className="border-y border-zinc-300 bg-zinc-950 px-6 py-12 text-white sm:px-10 sm:py-16">
-        <div className="mx-auto flex max-w-4xl flex-col justify-between gap-8 lg:flex-row lg:items-end">
+    <section className="relative mx-auto w-full max-w-6xl px-5 sm:px-8" id="get-started">
+      <div className="relative overflow-hidden rounded-2xl border border-zinc-900 bg-zinc-950 px-6 py-12 text-white sm:px-10 sm:py-16">
+        <div className="pointer-events-none absolute inset-0 -z-0 opacity-60" aria-hidden>
+          <div className="absolute -left-24 -top-32 h-72 w-72 rounded-full bg-violet-700/30 blur-3xl" />
+          <div className="absolute -right-16 bottom-[-6rem] h-72 w-72 rounded-full bg-indigo-500/20 blur-3xl" />
+        </div>
+
+        <div className="relative z-10 mx-auto flex max-w-4xl flex-col justify-between gap-8 lg:flex-row lg:items-end">
           <div className="max-w-2xl">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-violet-300">
+            <p className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-violet-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-violet-300" />
               Ready when you are
             </p>
             <h2 className="mt-3 text-balance text-3xl font-semibold tracking-[-0.035em] text-white sm:text-4xl">
@@ -24,21 +30,21 @@ export function CallToAction({ onStart }: CallToActionProps) {
             </p>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row lg:flex-col lg:items-stretch">
+          <div className="flex flex-col gap-3 lg:items-end">
             <Button
               onClick={onStart}
               size="lg"
-              className="h-11 rounded-md bg-white px-5 text-sm font-semibold text-zinc-950 shadow-none transition-colors hover:bg-zinc-200"
+              className="h-11 gap-1.5 rounded-md bg-white px-5 text-sm font-semibold text-zinc-950 shadow-none transition-colors hover:bg-zinc-200"
             >
               Open the editor
-              <ArrowRight className="ml-1.5 h-4 w-4" />
+              <ArrowRight className="h-4 w-4" />
             </Button>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <a
                 href={LINKS.macDownload}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-md border border-zinc-700 px-3 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-white/5 sm:flex-none"
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-700 px-3 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-white/5"
               >
                 <Apple className="h-4 w-4" />
                 macOS
@@ -47,10 +53,19 @@ export function CallToAction({ onStart }: CallToActionProps) {
                 href={LINKS.windowsDownload}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-md border border-zinc-700 px-3 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-white/5 sm:flex-none"
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-700 px-3 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-white/5"
               >
                 <Monitor className="h-4 w-4" />
                 Windows
+              </a>
+              <a
+                href={LINKS.github}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-10 items-center gap-2 rounded-md border border-zinc-700 px-3 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-white/5"
+              >
+                <Github className="h-4 w-4" />
+                Source
               </a>
             </div>
           </div>

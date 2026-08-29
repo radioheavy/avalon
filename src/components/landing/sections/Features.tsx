@@ -1,43 +1,76 @@
-import { FEATURES } from '../constants';
+import {
+  GitBranch,
+  KeyRound,
+  Library,
+  ShieldCheck,
+  Sparkles,
+  Wand2,
+} from 'lucide-react';
+import { SectionHeader } from '@/components/landing/SectionHeader';
+
+const FEATURES = [
+  {
+    title: 'Structured editing',
+    body: 'Work through title, subject, style, constraints, and timeline as distinct decisions—not one fragile block of text.',
+    Icon: GitBranch,
+  },
+  {
+    title: 'Useful expansion',
+    body: 'Begin with a short direction, then develop a fuller brief you can still inspect and edit field by field.',
+    Icon: Sparkles,
+  },
+  {
+    title: 'Reference, translated',
+    body: 'Use a reference image to establish a starting point, then make its visual choices your own.',
+    Icon: Wand2,
+  },
+  {
+    title: 'The right studio',
+    body: 'Keep image and video work in dedicated studios, with the controls and context each medium needs.',
+    Icon: KeyRound,
+  },
+  {
+    title: 'A research shelf',
+    body: 'Browse prompts.chat without leaving the workspace. Import an idea, study its structure, and adapt it.',
+    Icon: Library,
+  },
+  {
+    title: 'Your setup, kept local',
+    body: 'Bring your own provider key. Prompts and credentials stay on your device, without an Avalon account.',
+    Icon: ShieldCheck,
+  },
+];
 
 export function Features() {
   return (
-    <section className="relative mx-auto w-full max-w-6xl px-6 sm:px-8" id="features">
-      <div className="border-t border-zinc-200 pt-5 sm:pt-6">
-        <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-violet-700">
-          01 / The working surface
-        </span>
-      </div>
+    <section className="relative mx-auto w-full max-w-6xl px-5 sm:px-8">
+      <SectionHeader
+        number="01"
+        eyebrow="The working surface"
+        title={<>A prompt is a working document, not a magic sentence.</>}
+        description="Avalon gives image and video work a place to be specific: define the brief, keep the decisions visible, and return to the parts worth changing."
+      />
 
-      <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16">
-        <div>
-          <h2 className="max-w-xl text-4xl font-semibold tracking-[-0.04em] text-zinc-950 sm:text-5xl">
-            A prompt is a working document, not a magic sentence.
-          </h2>
-          <p className="mt-5 max-w-md text-base leading-7 text-zinc-600">
-            Avalon gives image and video work a place to be specific: define the brief, keep the
-            decisions visible, and return to the parts worth changing.
-          </p>
-        </div>
-
-        <div className="border-y border-zinc-200">
-          {FEATURES.map((feature, index) => (
-            <article
-              key={feature.title}
-              className="grid grid-cols-[2rem_minmax(0,1fr)] gap-x-4 border-b border-zinc-200 py-5 last:border-b-0 sm:grid-cols-[2.5rem_minmax(0,0.85fr)_minmax(0,1.15fr)] sm:gap-x-5 sm:py-6"
-            >
-              <span className="pt-0.5 font-mono text-xs tabular-nums text-violet-700">
-                {String(index + 1).padStart(2, '0')}
-              </span>
-              <h3 className="text-base font-medium leading-6 tracking-tight text-zinc-950">
-                {feature.title}
-              </h3>
-              <p className="col-start-2 mt-2 text-sm leading-6 text-zinc-600 sm:col-start-auto sm:mt-0">
-                {feature.body}
-              </p>
-            </article>
-          ))}
-        </div>
+      <div className="mt-10 border-y border-zinc-200 sm:mt-12">
+        {FEATURES.map(({ title, body, Icon }, index) => (
+          <article
+            key={title}
+            className="grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-x-4 border-b border-zinc-200 py-6 last:border-b-0 sm:grid-cols-[2.5rem_2.5rem_minmax(0,0.9fr)_minmax(0,1.4fr)] sm:gap-x-6 sm:py-7"
+          >
+            <span className="pt-0.5 font-mono text-xs tabular-nums text-violet-700">
+              {String(index + 1).padStart(2, '0')}
+            </span>
+            <span className="hidden h-9 w-9 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-700 sm:inline-flex">
+              <Icon className="h-4 w-4" aria-hidden />
+            </span>
+            <h3 className="text-base font-medium leading-6 tracking-tight text-zinc-950">
+              {title}
+            </h3>
+            <p className="col-start-2 mt-2 text-sm leading-6 text-zinc-600 sm:col-start-auto sm:mt-0">
+              {body}
+            </p>
+          </article>
+        ))}
       </div>
     </section>
   );

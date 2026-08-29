@@ -4,30 +4,27 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { PRODUCT_VIEWS, type ProductViewKey } from '../constants';
 import { ProductPreview } from '@/components/landing/ProductPreview';
+import { SectionHeader } from '@/components/landing/SectionHeader';
 
 export function Showcase() {
   const [active, setActive] = useState<ProductViewKey>('dashboard');
   const current = PRODUCT_VIEWS.find((view) => view.key === active) ?? PRODUCT_VIEWS[0];
 
   return (
-    <section className="relative mx-auto w-full max-w-6xl px-6 sm:px-8" id="showcase">
-      <div className="grid gap-8 border-t border-zinc-200 pt-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-end">
-        <div>
-          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-violet-700">
-            Product, not a promise
-          </span>
-          <h2 className="mt-3 max-w-2xl text-3xl font-semibold tracking-[-0.035em] text-zinc-950 sm:text-4xl">
-            A working surface for complicated prompts.
-          </h2>
-        </div>
-        <p className="max-w-md text-sm leading-6 text-zinc-600 lg:pb-1">
-          Move between structured editing, expansion, image analysis, and saved work without
-          losing the thread.
-        </p>
-      </div>
+    <section className="relative mx-auto w-full max-w-6xl px-5 sm:px-8">
+      <SectionHeader
+        number="02"
+        eyebrow="Product, not a promise"
+        title={<>A working surface for complicated prompts.</>}
+        description="Move between structured editing, expansion, image analysis, and saved work without losing the thread."
+      />
 
-      <div className="mt-8 border-b border-zinc-200">
-        <div className="flex min-w-max gap-5 overflow-x-auto" role="tablist" aria-label="Avalon views">
+      <div className="mt-8 sm:mt-10">
+        <div
+          className="flex min-w-max gap-6 overflow-x-auto border-b border-zinc-200"
+          role="tablist"
+          aria-label="Avalon views"
+        >
           {PRODUCT_VIEWS.map((s) => {
             const isActive = s.key === active;
             return (
@@ -51,25 +48,25 @@ export function Showcase() {
             );
           })}
         </div>
-      </div>
 
-      <figure className="mt-6 overflow-hidden border border-zinc-300 bg-white">
-        <div className="flex flex-col gap-1 border-b border-zinc-200 bg-[#f8f7f4] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-          <figcaption className="font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-600">
-            Avalon / {current.label}
+        <figure className="mt-6 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-[0_1px_0_0_rgb(24_24_27_/_0.04),0_24px_48px_-24px_rgb(24_24_27_/_0.10)]">
+          <figcaption className="flex flex-col gap-1 border-b border-zinc-200 bg-zinc-50/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <span className="font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-zinc-600">
+              Avalon / {current.label}
+            </span>
+            <span className="text-xs text-zinc-600">{current.description}</span>
           </figcaption>
-          <p className="text-xs text-zinc-600">{current.description}</p>
-        </div>
 
-        <div
-          id={`showcase-panel-${active}`}
-          role="tabpanel"
-          aria-labelledby={`showcase-tab-${active}`}
-          className="relative aspect-[16/9] w-full bg-zinc-100"
-        >
-          <ProductPreview view={active} />
-        </div>
-      </figure>
+          <div
+            id={`showcase-panel-${active}`}
+            role="tabpanel"
+            aria-labelledby={`showcase-tab-${active}`}
+            className="relative aspect-[16/9] w-full bg-zinc-100"
+          >
+            <ProductPreview view={active} />
+          </div>
+        </figure>
+      </div>
     </section>
   );
 }
